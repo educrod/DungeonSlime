@@ -2,9 +2,13 @@ name: Build
 
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -41,3 +45,14 @@ jobs:
         with:
           name: DungeonSlime-${{ matrix.artifact }}
           path: publish/${{ matrix.artifact }}
+
+  # Single aggregate check to require in branch protection instead of tracking
+  # each matrix leg's auto-generated context name individually. Only runs (and
+  # reports success) if every matrix leg above succeeded; otherwise it's
+  # skipped, which counts as "not passing" for a required status check.
+  build-status:
+    name: Build Status
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All platform builds succeeded"

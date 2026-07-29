@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  publish-release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Zip each platform build
+        run: |
+          cd artifacts
+          for dir in */; do
+            name="${dir%/}"
+            (cd "$name" && zip -r "../${name}.zip" .)
+          done
+
+      - name: Attach zips to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" artifacts/*.zip --repo ${{ github.repository }} --clobber
