@@ -19,15 +19,21 @@ jobs:
         with:
           path: artifacts
 
-      - name: Zip each platform build
+      - name: Package each platform build
         run: |
           cd artifacts
           for dir in */; do
             name="${dir%/}"
-            (cd "$name" && zip -r "../${name}.zip" .)
+            if [[ "$name" == *windows* ]]; then
+              (cd "$name" && zip -r "../${name}.zip" .)
+            else
+              # tar.gz (not zip) preserves the Unix executable bit on extraction
+              chmod +x "$name/DungeonSlime"
+              tar -czf "${name}.tar.gz" -C "$name" .
+            fi
           done
 
-      - name: Attach zips to the release
+      - name: Attach archives to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" artifacts/*.zip --repo ${{ github.repository }} --clobber
+        run: gh release upload "${{ github.event.release.tag_name }}" artifacts/*.zip artifacts/*.tar.gz --repo ${{ github.repository }} --clobber
