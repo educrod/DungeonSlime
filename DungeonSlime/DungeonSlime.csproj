@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <TieredCompilation>false</TieredCompilation>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Icon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Icon.ico" />
+    <None Remove="Icon.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Icon.ico">
+      <LogicalName>Icon.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Icon.bmp">
+      <LogicalName>Icon.bmp</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../MonoGameLibrary/MonoGameLibrary.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <_ContentBuilderProject>$(MSBuildThisFileDirectory)..\Content\Content.csproj</_ContentBuilderProject>
+    <_ContentOutputDir>$(MSBuildThisFileDirectory)Content\bin\$(MonoGamePlatform)</_ContentOutputDir>
+    <_ContentIntermediateDir>$(MSBuildThisFileDirectory)Content\obj\$(MonoGamePlatform)</_ContentIntermediateDir>
+  </PropertyGroup>
+  <Target Name="RunContentBuilder" BeforeTargets="BeforeCompile" AfterTargets="ResolveProjectReferences">
+    <MSBuild Projects="$(_ContentBuilderProject)" Targets="Build" Properties="Configuration=Release" />
+    <Exec Command="dotnet run --project &quot;$(_ContentBuilderProject)&quot; -c Release --no-build -- build -p $(MonoGamePlatform) --workingDir &quot;$(MSBuildThisFileDirectory)..\Content\&quot; -s Assets -o &quot;$(_ContentOutputDir)&quot; -i &quot;$(_ContentIntermediateDir)&quot;" />
+    <ItemGroup>
+      <_BuiltContent Include="$(_ContentOutputDir)\**\*.*" />
+      <Content Include="@(_BuiltContent)">
+        <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  </Target>
+</Project>

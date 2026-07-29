@@ -1,0 +1,3 @@
+[tools]
+# Installs and locks the project to .NET 9
+dotnet = "9.0"

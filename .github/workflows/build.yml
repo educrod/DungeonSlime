@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            artifact: windows-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: linux-x64
+          - os: macos-latest
+            rid: osx-arm64
+            artifact: macos-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore DungeonSlime.sln
+
+      - name: Publish
+        run: dotnet publish DungeonSlime/DungeonSlime.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o publish/${{ matrix.artifact }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DungeonSlime-${{ matrix.artifact }}
+          path: publish/${{ matrix.artifact }}

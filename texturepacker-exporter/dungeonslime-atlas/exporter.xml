@@ -1,0 +1,41 @@
+<exporter version="1.0">
+  <!-- internal identifier of the exporter -->
+  <name>dungeonslime</name>
+
+  <!-- display name shown in TexturePacker's "Data Format" dropdown -->
+  <displayName>Dungeon Slime Atlas XML</displayName>
+
+  <!-- description of the exporter -->
+  <description>Matches the TextureAtlas.FromFile XML schema used in DungeonSlime</description>
+
+  <!-- exporter version -->
+  <version>1.0</version>
+
+  <files>
+      <file>
+          <!-- name of this file variable -->
+          <name>atlasxml</name>
+
+          <!-- human readable name (for GUI) -->
+          <displayName>Dungeon Slime Atlas XML</displayName>
+
+          <!-- file extension for the file -->
+          <fileExtension>xml</fileExtension>
+
+          <!-- description shown in tooltips in the GUI -->
+          <description>XML region data consumed by TextureAtlas.FromFile</description>
+
+          <!-- name of the template file in this same folder -->
+          <template>dungeonslime.xml</template>
+      </file>
+  </files>
+
+  <!-- our schema has no trim-offset/pivot fields, so keep sprites untrimmed -->
+  <supportsTrimming>no</supportsTrimming>
+
+  <!-- our schema has no rotated flag, so keep sprites unrotated -->
+  <supportsRotation>no</supportsRotation>
+
+  <supportsNPOT>true</supportsNPOT>
+  <supportsPivotPoint>false</supportsPivotPoint>
+</exporter>
