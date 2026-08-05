@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<TextureAtlas>
-    <Texture>images/{{ texture.fullName|cut:".png" }}</Texture>
-    <Regions>
-{% for sprite in allSprites %}
-        <Region name="{{ sprite.trimmedName }}" x="{{ sprite.frameRect.x }}" y="{{ sprite.frameRect.y }}" width="{{ sprite.frameRect.width }}" height="{{ sprite.frameRect.height }}" />
-{% endfor %}
-    </Regions>
-</TextureAtlas>
