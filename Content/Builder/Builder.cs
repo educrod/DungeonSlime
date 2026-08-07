@@ -47,6 +47,7 @@ public class Builder : ContentBuilder
         // Only copy content from the assets folder rather than build it with the pipeline.
         contentCollection.IncludeCopy<WildcardRule>("*.json");
         contentCollection.IncludeCopy<WildcardRule>("*.xml");
+        contentCollection.IncludeCopy<WildcardRule>("*.fnt");
 
         // Exclude assets that match the pattern., only required overriding a default import behaviour.
         contentCollection.Exclude<WildcardRule>("Font/*.txt");
