@@ -10,7 +10,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # DungeonSlime.csproj only references MonoGame.Framework.DesktopGL, so the
+  # built Content (including compiled .fx effects) is identical across all
+  # three OSes below - only the native game executable differs per RID. Build
+  # it once here, on Windows, where the shader compiler runs natively (no
+  # Wine/fxccs.dll setup needed), and share it with the other legs instead of
+  # each of them repeating an effect-compile that needs Wine.
+  build-content:
+    name: Build Content
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore DungeonSlime.sln
+
+      - name: Build game content
+        run: dotnet build DungeonSlime/DungeonSlime.csproj -c Release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: game-content
+          path: DungeonSlime/Content/bin/DesktopGL
+
   build:
+    needs: build-content
     strategy:
       fail-fast: false
       matrix:
@@ -37,8 +67,13 @@ jobs:
       - name: Restore
         run: dotnet restore DungeonSlime.sln
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: game-content
+          path: DungeonSlime/Content/bin/DesktopGL
+
       - name: Publish
-        run: dotnet publish DungeonSlime/DungeonSlime.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o publish/${{ matrix.artifact }}
+        run: dotnet publish DungeonSlime/DungeonSlime.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o publish/${{ matrix.artifact }} -p:SkipContentBuild=true
 
       - uses: actions/upload-artifact@v4
         with:
