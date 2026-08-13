@@ -29,14 +29,23 @@
   <ItemGroup>
     <ProjectReference Include="../MonoGameLibrary/MonoGameLibrary.csproj" />
   </ItemGroup>
-  <PropertyGroup>
-    <_ContentBuilderProject>$(MSBuildThisFileDirectory)..\Content\Content.csproj</_ContentBuilderProject>
-    <_ContentOutputDir>$(MSBuildThisFileDirectory)Content\bin\$(MonoGamePlatform)</_ContentOutputDir>
-    <_ContentIntermediateDir>$(MSBuildThisFileDirectory)Content\obj\$(MonoGamePlatform)</_ContentIntermediateDir>
-  </PropertyGroup>
   <Target Name="RunContentBuilder" BeforeTargets="BeforeCompile" AfterTargets="ResolveProjectReferences">
-    <MSBuild Projects="$(_ContentBuilderProject)" Targets="Build" Properties="Configuration=Release" RemoveProperties="RuntimeIdentifier;RuntimeIdentifiers;SelfContained;PublishReadyToRun;PublishSingleFile;PublishTrimmed" />
-    <Exec Command="dotnet run --project &quot;$(_ContentBuilderProject)&quot; -c Release --no-build -- build -p $(MonoGamePlatform) --workingDir &quot;$(MSBuildThisFileDirectory)..\Content&quot; -s Assets -o &quot;$(_ContentOutputDir.TrimEnd('\'))&quot; -i &quot;$(_ContentIntermediateDir.TrimEnd('\'))&quot;" />
+    <!-- These must be evaluated here (execute-time), not in a top-level PropertyGroup
+         (evaluate-time): $(MonoGamePlatform) is set by MonoGame.Framework.DesktopGL's
+         own build targets, which an SDK-style project only imports at the very end -
+         after any top-level PropertyGroup has already evaluated. Computing these
+         eagerly silently resolved $(MonoGamePlatform) to empty, so content built into
+         Content\bin\ instead of Content\bin\DesktopGL\. -->
+    <PropertyGroup>
+      <_ContentBuilderProject>$(MSBuildThisFileDirectory)..\Content\Content.csproj</_ContentBuilderProject>
+      <_ContentOutputDir>$(MSBuildThisFileDirectory)Content\bin\$(MonoGamePlatform)</_ContentOutputDir>
+      <_ContentIntermediateDir>$(MSBuildThisFileDirectory)Content\obj\$(MonoGamePlatform)</_ContentIntermediateDir>
+    </PropertyGroup>
+    <!-- CI pre-builds content once (on Windows, avoiding Wine) and stages it into
+         _ContentOutputDir, then passes -p:SkipContentBuild=true so these two steps
+         are skipped and the pre-staged files are picked up by the ItemGroup below. -->
+    <MSBuild Condition="'$(SkipContentBuild)' != 'true'" Projects="$(_ContentBuilderProject)" Targets="Build" Properties="Configuration=Release" RemoveProperties="RuntimeIdentifier;RuntimeIdentifiers;SelfContained;PublishReadyToRun;PublishSingleFile;PublishTrimmed" />
+    <Exec Condition="'$(SkipContentBuild)' != 'true'" Command="dotnet run --project &quot;$(_ContentBuilderProject)&quot; -c Release --no-build -- build -p $(MonoGamePlatform) --workingDir &quot;$(MSBuildThisFileDirectory)..\Content&quot; -s Assets -o &quot;$(_ContentOutputDir.TrimEnd('\'))&quot; -i &quot;$(_ContentIntermediateDir.TrimEnd('\'))&quot;" />
     <ItemGroup>
       <_BuiltContent Include="$(_ContentOutputDir)\**\*.*" />
       <Content Include="@(_BuiltContent)">
