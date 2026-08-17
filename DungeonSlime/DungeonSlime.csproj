@@ -88,4 +88,12 @@
   <ItemGroup Condition="'$(OnlyWatchContentFiles)' == 'true'">
     <Compile Update="**\*.cs" Watch="false" />
   </ItemGroup>
+
+  <!-- Convenience wrapper: `dotnet build -t:WatchContent` instead of typing the
+       full dotnet watch invocation by hand. Run this in its own terminal, and
+       run the game itself normally (`dotnet run`, or F5) in a separate one -
+       this only rebuilds/copies content on .fx changes, it does not run the game. -->
+  <Target Name="WatchContent">
+    <Exec Command="dotnet watch build -- -t:BuildAndCopyContent -p:OnlyWatchContentFiles=true --tl:off" />
+  </Target>
 </Project>
