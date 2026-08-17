@@ -92,9 +92,16 @@
   <!-- Convenience wrapper: `dotnet build -t:WatchContent` instead of typing the
        full dotnet watch invocation by hand. Run this in its own terminal, and
        run the game itself normally (`dotnet run`, or F5) in a separate one -
-       this only rebuilds/copies content on .fx changes, it does not run the game. -->
+       this only rebuilds/copies content on .fx changes, it does not run the game.
+
+       The tutorial this is adapted from also disables AutoRestoreMGCBTool - that
+       property belongs to MonoGame.Content.Builder.Task's IncludeContent target,
+       which this project doesn't use, so it's a no-op here and is omitted.
+       The restore:false switch (passed below) is generic to dotnet build, not
+       MonoGame-specific, so it still applies: skips re-restoring DungeonSlime's
+       own NuGet packages on every .fx save. -->
   <Target Name="WatchContent">
-    <Exec Command="dotnet watch build -- -t:BuildAndCopyContent -p:OnlyWatchContentFiles=true --tl:off"
+    <Exec Command="dotnet watch build -- -t:BuildAndCopyContent -p:OnlyWatchContentFiles=true --restore:false --tl:off"
           EnvironmentVariables="DOTNET_WATCH_SUPPRESS_EMOJIS=1" />
   </Target>
 </Project>
