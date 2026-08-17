@@ -54,4 +54,38 @@
       </Content>
     </ItemGroup>
   </Target>
+
+  <!-- Shader hot reload (see docs.monogame.net "Hot Reloading Shaders" tutorial).
+       That tutorial's own BuildAndCopyContent target depends on IncludeContent /
+       MonoGameContentReference, both supplied by the MonoGame.Content.Builder.Task
+       package - which this project doesn't use. This is the equivalent target
+       built on our own RunContentBuilder instead: it reuses the same content
+       build step, then explicitly copies the result into the run output folder
+       (needed because invoking this target standalone via `dotnet watch build
+       -t:BuildAndCopyContent` bypasses the normal build sequence where the
+       Content item's CopyToOutputDirectory would otherwise handle this). -->
+  <Target Name="BuildAndCopyContent" DependsOnTargets="RunContentBuilder">
+    <ItemGroup>
+      <_WatchedContent Include="$(_ContentOutputDir)\**\*.*" />
+    </ItemGroup>
+    <!-- No extra "Content\" prefix: _ContentOutputDir already ends in a "Content"
+         folder (see RunContentBuilder above), so %(RecursiveDir) already includes it. -->
+    <Copy SourceFiles="@(_WatchedContent)"
+          DestinationFolder="$(OutDir)%(RecursiveDir)"
+          SkipUnchangedFiles="false" />
+  </Target>
+
+  <!-- dotnet watch only reacts to files it knows are project items. Our .fx files
+       are discovered by Builder.cs via directory scan, not declared as MSBuild
+       items here, so register them explicitly. -->
+  <ItemGroup>
+    <Watch Include="..\Content\Assets\**\*.fx" />
+  </ItemGroup>
+
+  <!-- When only rebuilding content (via BuildAndCopyContent above), stop dotnet
+       watch from also reacting to .cs edits - keeps the content-watch process
+       scoped to shader files only. -->
+  <ItemGroup Condition="'$(OnlyWatchContentFiles)' == 'true'">
+    <Compile Update="**\*.cs" Watch="false" />
+  </ItemGroup>
 </Project>
