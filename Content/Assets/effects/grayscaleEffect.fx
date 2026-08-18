@@ -40,6 +40,9 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     // rgb values based on the saturation parameter.
     float3 finalColor = lerp(grayscale, color.rgb, Saturation);
 
+    // modify the final color, just for debug visualization
+    //finalColor *= float3(1, 0, 0);
+
     // Return the final color with the original alpha value.
     return float4(finalColor, color.a);
 }
