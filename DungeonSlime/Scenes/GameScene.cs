@@ -176,7 +176,12 @@ public class GameScene : Scene
     {
         // Check if the grayscale effect's .fx source was recompiled on disk and,
         // if so, reload it - enables shader hot reload while the game is running.
-        _grayscaleEffect.TryRefresh(out _);
+        // Effect is a GraphicsResource (IDisposable), so the replaced instance
+        // must be disposed or each reload leaks a GPU resource.
+        if (_grayscaleEffect.TryRefresh(out Effect oldGrayscaleEffect))
+        {
+            oldGrayscaleEffect.Dispose();
+        }
 
         // Ensure the UI is always updated.
         _ui.Update(gameTime);
