@@ -6,6 +6,10 @@ using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary.Audio;
 using MonoGameLibrary.Input;
 using MonoGameLibrary.Scenes;
+using ImGuiNET;
+using ImGuiNET.SampleProgram.XNA;
+using MonoGameLibrary.Graphics;
+
 
 namespace MonoGameLibrary;
 
@@ -58,6 +62,12 @@ public class Core : Game
     /// Gets a reference to the audio control system.
     /// </summary>
     public static AudioController Audio { get; private set; }
+
+    /// <summary>  
+    /// Gets the ImGui renderer used for debug UIs.  
+    /// </summary>  
+    public static ImGuiRenderer ImGuiRenderer { get; private set; }
+
 
     /// <summary>
     /// Creates a new Core instance.
@@ -121,6 +131,15 @@ public class Core : Game
 
         // Create a new audio controller.
         Audio = new AudioController();
+
+        // Create the ImGui renderer.
+        ImGuiRenderer = new ImGuiRenderer(this);
+        ImGuiRenderer.RebuildFontAtlas();
+
+        // Optional: Scale text and widgets for easier readability.
+        var io = ImGui.GetIO();
+        io.FontGlobalScale = 1.75f;
+        ImGui.GetStyle().ScaleAllSizes(1.5f);
     }
 
     protected override void UnloadContent()
@@ -167,6 +186,8 @@ public class Core : Game
         {
             s_activeScene.Draw(gameTime);
         }
+
+        Material.DrawVisibleDebugUi(gameTime);
 
         base.Draw(gameTime);
     }
