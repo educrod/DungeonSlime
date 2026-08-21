@@ -45,7 +45,9 @@ public class GameScene : Scene
 
     // The grayscale shader effect. Wrapped in WatchedAsset so it can be
     // hot-reloaded while the game is running (see TryRefresh in Update).
-    private WatchedAsset<Effect> _grayscaleEffect;
+    //private WatchedAsset<Effect> _grayscaleEffect;
+    // The grayscale shader effect.  
+    private Material _grayscaleEffect;
 
     // The amount of saturation to provide the grayscale shader effect.
     private float _saturation = 1.0f;
@@ -169,20 +171,20 @@ public class GameScene : Scene
         // Load the collect sound effect.
         _collectSoundEffect = Content.Load<SoundEffect>("audio/collect");
         // Load the grayscale effect.
-        _grayscaleEffect = Content.Watch<Effect>("effects/grayscaleEffect");
+        //_grayscaleEffect = Content.Watch<Effect>("effects/grayscaleEffect");
+        // Load the grayscale effect  
+        _grayscaleEffect = Content.WatchMaterial("effects/grayscaleEffect");
+
+        _grayscaleEffect.IsDebugVisible = true;
+
     }
 
     public override void Update(GameTime gameTime)
     {
-        // Check if the grayscale effect's .fx source was recompiled on disk and,
-        // if so, reload it - enables shader hot reload while the game is running.
-        // Effect is a GraphicsResource (IDisposable), so the replaced instance
-        // must be disposed or each reload leaks a GPU resource.
-        if (_grayscaleEffect.TryRefresh(out Effect oldGrayscaleEffect))
-        {
-            oldGrayscaleEffect.Dispose();
-        }
-
+       
+        // Update the grayscale effect if it was changed
+        _grayscaleEffect.Update();
+        
         // Ensure the UI is always updated.
         _ui.Update(gameTime);
 
@@ -410,10 +412,11 @@ public class GameScene : Scene
         if (_state != GameState.Playing)
         {
             // We are in a game over state, so apply the saturation parameter.
-            _grayscaleEffect.Asset.Parameters["Saturation"].SetValue(_saturation);
+            //_grayscaleEffect.Effect.Parameters["Saturation"].SetValue(_saturation);
+            _grayscaleEffect.SetParameter("Saturation", _saturation);
 
             // And begin the sprite batch using the grayscale effect.
-            Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, effect: _grayscaleEffect.Asset);
+            Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, effect: _grayscaleEffect.Effect);
         }
         else
         {
@@ -436,6 +439,5 @@ public class GameScene : Scene
         // Draw the UI.
         _ui.Draw();
     }
-
 
 }

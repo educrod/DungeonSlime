@@ -43,6 +43,9 @@ float4 MainPS(VertexShaderOutput input) : COLOR
     // modify the final color, just for debug visualization
     //finalColor *= float3(1, 0, 0);
 
+    // overwrite all existing operations and set the final color to white  
+    //finalColor.rgb = 1;  
+
     // Return the final color with the original alpha value.
     return float4(finalColor, color.a);
 }

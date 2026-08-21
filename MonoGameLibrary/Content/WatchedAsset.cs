@@ -26,15 +26,22 @@ public class WatchedAsset<T> where T : class
     /// </summary>
     public ContentManager Owner { get; }
 
-    // The last write time of the source .xnb file at the point it was last loaded.
-    private DateTime _updatedAt;
+    /// <summary>
+    /// Gets the last write time of the source .xnb file at the point the currently
+    /// loaded <see cref="Asset"/> was read from it.
+    /// </summary>
+    /// <remarks>
+    /// This is the timestamp of the content build that produced the loaded instance,
+    /// not the wall clock time at which it was loaded into memory.
+    /// </remarks>
+    public DateTime UpdatedAt { get; private set; }
 
     internal WatchedAsset(ContentManager owner, string assetName, T asset)
     {
         Owner = owner;
         AssetName = assetName;
         Asset = asset;
-        _updatedAt = GetXnbLastWriteTime();
+        UpdatedAt = GetXnbLastWriteTime();
     }
 
     /// <summary>
@@ -48,7 +55,7 @@ public class WatchedAsset<T> where T : class
         oldAsset = null;
 
         DateTime lastWriteTime = GetXnbLastWriteTime();
-        if (lastWriteTime <= _updatedAt)
+        if (lastWriteTime <= UpdatedAt)
         {
             return false;
         }
@@ -63,7 +70,7 @@ public class WatchedAsset<T> where T : class
 
         Owner.UnloadAsset(AssetName);
         Asset = Owner.Load<T>(AssetName);
-        _updatedAt = lastWriteTime;
+        UpdatedAt = lastWriteTime;
 
         return true;
     }
