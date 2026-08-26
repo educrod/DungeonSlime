@@ -9,12 +9,19 @@ using MonoGameLibrary.Scenes;
 using ImGuiNET;
 using ImGuiNET.SampleProgram.XNA;
 using MonoGameLibrary.Graphics;
+using MonoGameLibrary.Content;
+using System.Collections.Generic;
 
 
 namespace MonoGameLibrary;
 
 public class Core : Game
 {
+    /// <summary>  
+    /// Gets a runtime generated 1x1 pixel texture.  
+    /// </summary>  
+    public static Texture2D Pixel { get; private set; }
+
     internal static Core s_instance;
 
     /// <summary>
@@ -68,6 +75,21 @@ public class Core : Game
     /// </summary>  
     public static ImGuiRenderer ImGuiRenderer { get; private set; }
 
+    /// <summary>  
+    /// The material that is used when changing scenes  
+    /// </summary>  
+    public static Material SceneTransitionMaterial { get; private set; }
+
+    /// <summary>  
+    /// A set of grayscale gradient textures to use as transition guides  
+    /// </summary>  
+    
+    public static List<Texture2D> SceneTransitionTextures { get; private set; }
+
+    /// <summary>  
+    /// The current transition between scenes  
+    /// </summary>  
+    public static SceneTransition SceneTransition { get; protected set; } = SceneTransition.Open(1000);
 
     /// <summary>
     /// Creates a new Core instance.
@@ -119,9 +141,15 @@ public class Core : Game
     {
         base.Initialize();
 
+
+
         // Set the core's graphics device to a reference of the base Game's
         // graphics device.
         GraphicsDevice = base.GraphicsDevice;
+
+        // Create a 1x1 white pixel texture for drawing quads.
+        Pixel = new Texture2D(GraphicsDevice, 1, 1);
+        Pixel.SetData(new Color[]{ Color.White });
 
         // Create the sprite batch instance.
         SpriteBatch = new SpriteBatch(GraphicsDevice);
@@ -140,6 +168,19 @@ public class Core : Game
         var io = ImGui.GetIO();
         io.FontGlobalScale = 1.75f;
         ImGui.GetStyle().ScaleAllSizes(1.5f);
+    }
+    protected override void LoadContent()  
+    {  
+        base.LoadContent();  
+        SceneTransitionMaterial = Content.WatchMaterial("effects/sceneTransitionEffect"); 
+        SceneTransitionMaterial.SetParameter("EdgeWidth", .05f);
+        SceneTransitionMaterial.IsDebugVisible = true; 
+
+        SceneTransitionTextures = new List<Texture2D>();
+        SceneTransitionTextures.Add(Content.Load<Texture2D>("images/angled"));
+        SceneTransitionTextures.Add(Content.Load<Texture2D>("images/concave"));
+        SceneTransitionTextures.Add(Content.Load<Texture2D>("images/radial"));
+        SceneTransitionTextures.Add(Content.Load<Texture2D>("images/ripple"));
     }
 
     protected override void UnloadContent()
@@ -165,7 +206,7 @@ public class Core : Game
 
         // if there is a next scene waiting to be switch to, then transition
         // to that scene.
-        if (s_nextScene != null)
+        if (s_nextScene != null && SceneTransition.IsComplete)
         {
             TransitionScene();
         }
@@ -175,7 +216,11 @@ public class Core : Game
         {
             s_activeScene.Update(gameTime);
         }
-
+        
+        // Check if the scene transition material needs to be reloaded.
+        SceneTransitionMaterial.SetParameter("Progress", SceneTransition.DirectionalRatio);
+        SceneTransitionMaterial.Update();
+        
         base.Update(gameTime);
     }
 
@@ -186,7 +231,12 @@ public class Core : Game
         {
             s_activeScene.Draw(gameTime);
         }
-
+        
+        // Draw the scene transition quad
+        SpriteBatch.Begin(effect: SceneTransitionMaterial.Effect);  
+        SpriteBatch.Draw(SceneTransitionTextures[SceneTransition.TextureIndex % SceneTransitionTextures.Count], GraphicsDevice.Viewport.Bounds, Color.White);  
+        SpriteBatch.End();
+        
         Material.DrawVisibleDebugUi(gameTime);
 
         base.Draw(gameTime);
@@ -199,11 +249,13 @@ public class Core : Game
         if (s_activeScene != next)
         {
             s_nextScene = next;
+            SceneTransition = SceneTransition.Close(250);
         }
     }
 
     private static void TransitionScene()
     {
+        SceneTransition = SceneTransition.Open(500);
         // If there is an active scene, dispose of it.
         if (s_activeScene != null)
         {
