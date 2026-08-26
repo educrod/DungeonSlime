@@ -1,0 +1,105 @@
+# Forgejo-only build for git.dudu.eng.br.
+#
+# Forgejo resolves workflows from the FIRST of .forgejo/workflows,
+# .gitea/workflows, .github/workflows that exists - directory existence alone
+# decides it, contents are irrelevant (modules/actions/workflows.go,
+# ListWorkflows). So this directory hides .github/workflows from Forgejo
+# completely: anything Forgejo should run has to live here. GitHub is
+# unaffected, it never looks at .forgejo, so the 3-OS matrix in
+# .github/workflows/build.yml keeps running there untouched.
+#
+# The self-hosted runner offers one Linux label set (ubuntu-latest /
+# ubuntu-22.04 / docker), so there is no windows/macOS matrix here and no
+# separate build-content job. .github/workflows/build.yml builds content on a
+# Windows runner specifically to avoid Wine; this one has no Windows runner
+# available, so it takes the Wine path instead and compiles
+# Content/Assets/effects/grayscaleEffect.fx through mgfxc under Wine.
+name: Build (Linux)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# The runner is capacity: 1, and a cold Wine prefix build is expensive - don't
+# let pushes queue up behind each other.
+concurrency:
+  group: forgejo-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # A fresh prefix otherwise blocks on a graphical "install wine-mono?" prompt,
+  # which never gets answered on a headless runner. The prefix runs a real
+  # Windows dotnet SDK, so mscoree is unused anyway.
+  WINEDLLOVERRIDES: mscoree=d
+  WINEDEBUG: -all
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+
+jobs:
+  build:
+    name: Build linux-x64
+    runs-on: ubuntu-latest
+    steps:
+      # lfs: true is required - .gitattributes puts png/wav/ogg/ttf/ico through
+      # LFS, and the content pipeline needs the real files, not the pointers.
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Resolve Wine prefix location
+        run: echo "MGFXC_WINE_PATH=$HOME/.winemonogame" >> "$GITHUB_ENV"
+
+      # Roughly 1 GB once populated - a full Windows dotnet SDK, d3dcompiler_47
+      # and fxccs - and a miss means re-downloading all of it from three
+      # different hosts. Bump the -v1 suffix to force a rebuild.
+      - name: Cache Wine prefix
+        id: wine-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.winemonogame
+          key: mgfxc-wine-net9-v1
+
+      # Ubuntu 24.04 ships Wine 9.0, which clears the setup script's hard
+      # "wine >= 8" check, so no WineHQ repo is needed. p7zip-full is
+      # transitional here but still puts 7z on PATH, which the script also
+      # hard-requires.
+      - name: Install Wine
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            wine p7zip-full
+          wine --version
+
+      - name: Build mgfxc Wine prefix
+        if: steps.wine-cache.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL https://monogame.net/downloads/net9_mgfxc_wine_setup.sh \
+            -o /tmp/mgfxc_wine_setup.sh
+          bash /tmp/mgfxc_wine_setup.sh
+
+      - name: Restore
+        run: dotnet restore DungeonSlime.sln
+
+      # Deliberately no -p:SkipContentBuild=true. That flag exists for the
+      # GitHub matrix, where content arrives prebuilt from the Windows leg;
+      # here the csproj's own RunContentBuilder target does the content build,
+      # and with MGFXC_WINE_PATH set the .fx compile goes through Wine.
+      #
+      # -m:1 because the runner host has 916 MB of RAM and no swap - parallel
+      # MSBuild nodes are the likeliest way to get an OOM kill on this box.
+      - name: Publish
+        run: |
+          dotnet publish DungeonSlime/DungeonSlime.csproj \
+            -c Release -r linux-x64 --self-contained true \
+            -o publish/linux-x64 -m:1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DungeonSlime-linux-x64
+          path: publish/linux-x64
