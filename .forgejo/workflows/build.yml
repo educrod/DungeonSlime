@@ -81,21 +81,25 @@ jobs:
         run: |
           curl -fsSL https://monogame.net/downloads/net9_mgfxc_wine_setup.sh \
             -o /tmp/mgfxc_wine_setup.sh
-          bash /tmp/mgfxc_wine_setup.sh
+          nice -n 19 bash /tmp/mgfxc_wine_setup.sh
 
       - name: Restore
-        run: dotnet restore DungeonSlime.sln
+        run: nice -n 19 dotnet restore DungeonSlime.sln
 
       # Deliberately no -p:SkipContentBuild=true. That flag exists for the
       # GitHub matrix, where content arrives prebuilt from the Windows leg;
       # here the csproj's own RunContentBuilder target does the content build,
       # and with MGFXC_WINE_PATH set the .fx compile goes through Wine.
       #
-      # -m:1 because the runner host has 916 MB of RAM and no swap - parallel
-      # MSBuild nodes are the likeliest way to get an OOM kill on this box.
+      # -m:1 and nice: this runner shares a host with the Forgejo instance it
+      # builds for, and an unthrottled run here made git.dudu.eng.br
+      # unreachable for ~15 minutes (load average 58 on 2 vCPUs, memory never a
+      # factor - it was disk). nice only buys CPU headroom; ionice is useless
+      # here because the NVMe scheduler is "none". The runner also caps job
+      # containers at --cpus=1.5 in runner-config.yml.
       - name: Publish
         run: |
-          dotnet publish DungeonSlime/DungeonSlime.csproj \
+          nice -n 19 dotnet publish DungeonSlime/DungeonSlime.csproj \
             -c Release -r linux-x64 --self-contained true \
             -o publish/linux-x64 -m:1
 
