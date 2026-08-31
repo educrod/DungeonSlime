@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic; 
 using DungeonSlime.GameObjects;
 using DungeonSlime.UI;
 using Microsoft.Xna.Framework;
@@ -23,12 +24,16 @@ public class GameScene : Scene
 
     // Reference to the slime.
     private Slime _slime;
+    private RedColorMap _slimeColorMap;
+
 
     // Reference to the bat.
     private Bat _bat;
 
     // Defines the tilemap to draw.
     private Tilemap _tilemap;
+    
+    private Texture2D _colorMap;
 
     // Defines the bounds of the room that the slime and bat are contained within.
     private Rectangle _roomBounds;
@@ -55,6 +60,8 @@ public class GameScene : Scene
     // The speed of the fade to grayscale effect.
     private const float FADE_SPEED = 0.02f;
 
+    // The color swap shader material.  
+    private Material _colorSwapMaterial;
 
     public override void Initialize()
     {
@@ -174,8 +181,23 @@ public class GameScene : Scene
         //_grayscaleEffect = Content.Watch<Effect>("effects/grayscaleEffect");
         // Load the grayscale effect  
         _grayscaleEffect = Content.WatchMaterial("effects/grayscaleEffect");
-
         _grayscaleEffect.IsDebugVisible = true;
+
+        // Load the colorSwap material  
+        _colorSwapMaterial = Core.SharedContent.WatchMaterial("effects/colorSwapEffect");
+        _colorSwapMaterial.IsDebugVisible = true;
+
+        _colorMap = Core.Content.Load<Texture2D>("images/color-map-pink");
+
+        _slimeColorMap = new RedColorMap();  
+        _slimeColorMap.SetColorsByExistingColorMap(_colorMap);
+        _slimeColorMap.SetColorsByRedValue(new Dictionary<int, Color>
+        {
+            // main color
+            [32] = Color.Yellow,
+        }, false);
+
+        _colorSwapMaterial.SetParameter("ColorMap", _slimeColorMap.ColorMap);
 
     }
 
@@ -184,6 +206,12 @@ public class GameScene : Scene
        
         // Update the grayscale effect if it was changed
         _grayscaleEffect.Update();
+
+        // Update the colorSwap material if it was changed
+        _colorSwapMaterial.Update();
+
+        // Prevent the game from actually updating. TODO: remove this when we are done playing with shaders!
+        return;
         
         // Ensure the UI is always updated.
         _ui.Update(gameTime);
@@ -416,23 +444,37 @@ public class GameScene : Scene
             _grayscaleEffect.SetParameter("Saturation", _saturation);
 
             // And begin the sprite batch using the grayscale effect.
-            Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, effect: _grayscaleEffect.Effect);
+            //Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, effect: _grayscaleEffect.Effect);
+            Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, sortMode: SpriteSortMode.Immediate, effect: _colorSwapMaterial.Effect);
+
         }
         else
         {
             // Otherwise, just begin the sprite batch as normal.
-            Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            //Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, sortMode: SpriteSortMode.Immediate, effect: _colorSwapMaterial.Effect);
+
         }
-    
+
+        // Update the colorMap
+        _colorSwapMaterial.SetParameter("ColorMap", _colorMap);
+        
         // Draw the tilemap
         _tilemap.Draw(Core.SpriteBatch);
-    
-        // Draw the slime.
-        _slime.Draw();
-    
+ 
         // Draw the bat.
         _bat.Draw();
     
+        // Update the colorMap for the slime
+        if ((int)gameTime.TotalGameTime.TotalSeconds % 2 == 0)
+        {        
+            _colorSwapMaterial.SetParameter("ColorMap", _slimeColorMap.ColorMap);
+        }
+
+        // Draw the slime.
+        _slime.Draw();
+    
+
         // Always end the sprite batch when finished.
         Core.SpriteBatch.End();
     

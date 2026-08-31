@@ -56,6 +56,19 @@ public class Core : Game
     public static new ContentManager Content { get; private set; }
 
     /// <summary>
+    /// Gets the content manager used to load assets owned by this library rather
+    /// than by the game consuming it.
+    /// </summary>
+    /// <remarks>
+    /// The 2D Shaders tutorial gives shared assets their own .mgcb and their own
+    /// ContentManager rooted at "SharedContent". Here they are instead built by
+    /// MonoGameLibrary.csproj's BuildSharedContent target and merged into the single
+    /// content root, so this is an alias for <see cref="Content"/> - it exists so the
+    /// tutorial's Core.SharedContent.Load/WatchMaterial calls work unchanged.
+    /// </remarks>
+    public static ContentManager SharedContent => Content;
+
+    /// <summary>
     /// Gets a reference to to the input management system.
     /// </summary>
     public static InputManager Input { get; private set; }
