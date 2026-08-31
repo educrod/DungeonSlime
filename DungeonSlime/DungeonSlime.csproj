@@ -65,11 +65,26 @@
        -t:BuildAndCopyContent` bypasses the normal build sequence where the
        Content item's CopyToOutputDirectory would otherwise handle this). -->
   <Target Name="BuildAndCopyContent" DependsOnTargets="RunContentBuilder">
+    <!-- RunContentBuilder only builds this game's Content/Assets tree. Assets owned
+         by the library are built by MonoGameLibrary.csproj's BuildSharedContent,
+         which normally runs via AssignTargetPaths when the ProjectReference is
+         built - a sequence that invoking this target standalone bypasses entirely.
+         Without this call, editing a shared .fx triggers dotnet watch, rebuilds
+         nothing, and WatchedAsset never sees a newer .xnb, so hot reload silently
+         does nothing for every shader under MonoGameLibrary/SharedContent. -->
+    <PropertyGroup>
+      <_SharedContentProject>$(MSBuildThisFileDirectory)..\MonoGameLibrary\MonoGameLibrary.csproj</_SharedContentProject>
+      <_SharedContentOutputDir>$(MSBuildThisFileDirectory)..\MonoGameLibrary\Content\bin\$(MonoGamePlatform)</_SharedContentOutputDir>
+    </PropertyGroup>
+    <MSBuild Condition="'$(SkipContentBuild)' != 'true'" Projects="$(_SharedContentProject)" Targets="BuildSharedContent" RemoveProperties="RuntimeIdentifier;RuntimeIdentifiers;SelfContained;PublishReadyToRun;PublishSingleFile;PublishTrimmed" />
     <ItemGroup>
       <_WatchedContent Include="$(_ContentOutputDir)\**\*.*" />
+      <_WatchedContent Include="$(_SharedContentOutputDir)\**\*.*" />
     </ItemGroup>
-    <!-- No extra "Content\" prefix: _ContentOutputDir already ends in a "Content"
-         folder (see RunContentBuilder above), so %(RecursiveDir) already includes it. -->
+    <!-- No extra "Content\" prefix: both output dirs already end in a "Content"
+         folder (see RunContentBuilder above and BuildSharedContent in
+         MonoGameLibrary.csproj), so %(RecursiveDir) already includes it - which is
+         also why one Copy can service both trees. -->
     <Copy SourceFiles="@(_WatchedContent)"
           DestinationFolder="$(OutDir)%(RecursiveDir)"
           SkipUnchangedFiles="false" />
