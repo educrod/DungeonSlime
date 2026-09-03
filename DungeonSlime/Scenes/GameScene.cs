@@ -48,12 +48,6 @@ public class GameScene : Scene
 
     private GameState _state;
 
-    // The grayscale shader effect. Wrapped in WatchedAsset so it can be
-    // hot-reloaded while the game is running (see TryRefresh in Update).
-    //private WatchedAsset<Effect> _grayscaleEffect;
-    // The grayscale shader effect.  
-    private Material _grayscaleEffect;
-
     // The amount of saturation to provide the grayscale shader effect.
     private float _saturation = 1.0f;
 
@@ -62,6 +56,9 @@ public class GameScene : Scene
 
     // The color swap shader material.  
     private Material _colorSwapMaterial;
+
+    private TimeSpan _lastGrowTime;
+
 
     public override void Initialize()
     {
@@ -177,24 +174,19 @@ public class GameScene : Scene
 
         // Load the collect sound effect.
         _collectSoundEffect = Content.Load<SoundEffect>("audio/collect");
-        // Load the grayscale effect.
-        //_grayscaleEffect = Content.Watch<Effect>("effects/grayscaleEffect");
-        // Load the grayscale effect  
-        _grayscaleEffect = Content.WatchMaterial("effects/grayscaleEffect");
-        _grayscaleEffect.IsDebugVisible = true;
 
         // Load the colorSwap material  
         _colorSwapMaterial = Core.SharedContent.WatchMaterial("effects/colorSwapEffect");
         _colorSwapMaterial.IsDebugVisible = true;
 
-        _colorMap = Core.Content.Load<Texture2D>("images/color-map-pink");
+        _colorMap = Core.Content.Load<Texture2D>("images/color-map-dark-purple");
 
         _slimeColorMap = new RedColorMap();  
         _slimeColorMap.SetColorsByExistingColorMap(_colorMap);
         _slimeColorMap.SetColorsByRedValue(new Dictionary<int, Color>
         {
             // main color
-            [32] = Color.Yellow,
+            [32] = Color.White,
         }, false);
 
         _colorSwapMaterial.SetParameter("ColorMap", _slimeColorMap.ColorMap);
@@ -204,14 +196,12 @@ public class GameScene : Scene
     public override void Update(GameTime gameTime)
     {
        
-        // Update the grayscale effect if it was changed
-        _grayscaleEffect.Update();
 
         // Update the colorSwap material if it was changed
         _colorSwapMaterial.Update();
 
         // Prevent the game from actually updating. TODO: remove this when we are done playing with shaders!
-        return;
+        //return;
         
         // Ensure the UI is always updated.
         _ui.Update(gameTime);
@@ -222,11 +212,18 @@ public class GameScene : Scene
             // gradually decrease the saturation to create the fading grayscale.
             _saturation = Math.Max(0.0f, _saturation - FADE_SPEED);
 
+
+
             // If its just a game over state, return back.
             if (_state == GameState.GameOver)
             {
                 return;
             }
+
+        }
+        else
+        {
+            _saturation = 1;
         }
 
         // If the pause button is pressed, toggle the pause state.
@@ -248,10 +245,10 @@ public class GameScene : Scene
         _bat.Update(gameTime);
 
         // Perform collision checks.
-        CollisionChecks();
+        CollisionChecks(gameTime);
     }
 
-    private void CollisionChecks()
+    private void CollisionChecks(GameTime gameTime)
     {
         // Capture the current bounds of the slime and bat.
         Circle slimeBounds = _slime.GetBounds();
@@ -269,6 +266,9 @@ public class GameScene : Scene
 
             // Tell the slime to grow.
             _slime.Grow();
+
+            // Remember when the last time the slime grew  
+            _lastGrowTime = gameTime.TotalGameTime;
 
             // Increment the score.
             _score += 100;
@@ -437,24 +437,12 @@ public class GameScene : Scene
         // Clear the back buffer.
         Core.GraphicsDevice.Clear(Color.CornflowerBlue);
     
-        if (_state != GameState.Playing)
-        {
-            // We are in a game over state, so apply the saturation parameter.
-            //_grayscaleEffect.Effect.Parameters["Saturation"].SetValue(_saturation);
-            _grayscaleEffect.SetParameter("Saturation", _saturation);
+        _colorSwapMaterial.SetParameter("Saturation", _saturation);
 
-            // And begin the sprite batch using the grayscale effect.
-            //Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, effect: _grayscaleEffect.Effect);
-            Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, sortMode: SpriteSortMode.Immediate, effect: _colorSwapMaterial.Effect);
-
-        }
-        else
-        {
-            // Otherwise, just begin the sprite batch as normal.
-            //Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-            Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, sortMode: SpriteSortMode.Immediate, effect: _colorSwapMaterial.Effect);
-
-        }
+        Core.SpriteBatch.Begin(
+            samplerState: SamplerState.PointClamp,
+            sortMode: SpriteSortMode.Immediate,
+            effect: _colorSwapMaterial.Effect);
 
         // Update the colorMap
         _colorSwapMaterial.SetParameter("ColorMap", _colorMap);
@@ -464,15 +452,23 @@ public class GameScene : Scene
  
         // Draw the bat.
         _bat.Draw();
-    
-        // Update the colorMap for the slime
-        if ((int)gameTime.TotalGameTime.TotalSeconds % 2 == 0)
-        {        
-            _colorSwapMaterial.SetParameter("ColorMap", _slimeColorMap.ColorMap);
-        }
 
         // Draw the slime.
-        _slime.Draw();
+        _slime.Draw(segmentIndex =>
+        {
+            const int flashTimeMs = 125;
+            var map = _colorMap;
+            var elapsedMs = gameTime.TotalGameTime.TotalMilliseconds - _lastGrowTime.TotalMilliseconds;
+            var intervalsAgo = (int)(elapsedMs / flashTimeMs);
+
+            if (intervalsAgo < _slime.Size && (intervalsAgo - segmentIndex) % _slime.Size == 0)
+            {
+                map = _slimeColorMap.ColorMap;
+            }
+
+            _colorSwapMaterial.SetParameter("ColorMap", map);
+        });
+
     
 
         // Always end the sprite batch when finished.
