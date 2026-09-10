@@ -54,8 +54,9 @@ public class GameScene : Scene
     // The speed of the fade to grayscale effect.
     private const float FADE_SPEED = 0.02f;
 
-    // The color swap shader material.  
-    private Material _colorSwapMaterial;
+    // The uber material for the game objects  
+    private Material _gameMaterial;
+    private SpriteCamera3d _camera;
 
     private TimeSpan _lastGrowTime;
 
@@ -175,21 +176,23 @@ public class GameScene : Scene
         // Load the collect sound effect.
         _collectSoundEffect = Content.Load<SoundEffect>("audio/collect");
 
-        // Load the colorSwap material  
-        _colorSwapMaterial = Core.SharedContent.WatchMaterial("effects/colorSwapEffect");
-        _colorSwapMaterial.IsDebugVisible = true;
-
-        _colorMap = Core.Content.Load<Texture2D>("images/color-map-dark-purple");
-
-        _slimeColorMap = new RedColorMap();  
+         // Load the colorSwap map
+        _colorMap = Content.Load<Texture2D>("images/color-map-dark-purple");
+        _slimeColorMap = new RedColorMap();
         _slimeColorMap.SetColorsByExistingColorMap(_colorMap);
         _slimeColorMap.SetColorsByRedValue(new Dictionary<int, Color>
         {
             // main color
-            [32] = Color.White,
-        }, false);
+            [32] = Color.LightSteelBlue,
+        }, false);      
 
-        _colorSwapMaterial.SetParameter("ColorMap", _slimeColorMap.ColorMap);
+        // Load the game material
+        _gameMaterial = Content.WatchMaterial("effects/gameEffect");
+        _gameMaterial.IsDebugVisible = true;
+        _gameMaterial.SetParameter("ColorMap", _colorMap);
+        _camera = new SpriteCamera3d();
+        _gameMaterial.SetParameter("MatrixTransform", _camera.CalculateMatrixTransform());
+        _gameMaterial.SetParameter("ScreenSize", new Vector2(Core.GraphicsDevice.Viewport.Width, Core.GraphicsDevice.Viewport.Height));
 
     }
 
@@ -198,13 +201,23 @@ public class GameScene : Scene
        
 
         // Update the colorSwap material if it was changed
-        _colorSwapMaterial.Update();
+        _gameMaterial.Update();
+
 
         // Prevent the game from actually updating. TODO: remove this when we are done playing with shaders!
         //return;
         
         // Ensure the UI is always updated.
         _ui.Update(gameTime);
+
+        // Set the camera view to look at the player slime
+        var viewport = Core.GraphicsDevice.Viewport;
+        var center = .5f * new Vector2(viewport.Width, viewport.Height);
+        var slimePosition = new Vector2(_slime?.GetBounds().X ?? center.X, _slime?.GetBounds().Y ?? center.Y);
+        var offset = .01f * (slimePosition - center);
+        _camera.LookOffset = offset;
+        _gameMaterial.SetParameter("MatrixTransform", _camera.CalculateMatrixTransform());
+
 
         if (_state != GameState.Playing)
         {
@@ -435,17 +448,18 @@ public class GameScene : Scene
     public override void Draw(GameTime gameTime)
     {
         // Clear the back buffer.
-        Core.GraphicsDevice.Clear(Color.CornflowerBlue);
+        Core.GraphicsDevice.Clear(new Color(32, 16, 20));
     
-        _colorSwapMaterial.SetParameter("Saturation", _saturation);
+        _gameMaterial.SetParameter("Saturation", _saturation);
 
         Core.SpriteBatch.Begin(
             samplerState: SamplerState.PointClamp,
             sortMode: SpriteSortMode.Immediate,
-            effect: _colorSwapMaterial.Effect);
+            rasterizerState: RasterizerState.CullNone,
+            effect: _gameMaterial.Effect);
 
         // Update the colorMap
-        _colorSwapMaterial.SetParameter("ColorMap", _colorMap);
+        _gameMaterial.SetParameter("ColorMap", _colorMap);
         
         // Draw the tilemap
         _tilemap.Draw(Core.SpriteBatch);
@@ -466,7 +480,7 @@ public class GameScene : Scene
                 map = _slimeColorMap.ColorMap;
             }
 
-            _colorSwapMaterial.SetParameter("ColorMap", map);
+            _gameMaterial.SetParameter("ColorMap", map);
         });
 
     

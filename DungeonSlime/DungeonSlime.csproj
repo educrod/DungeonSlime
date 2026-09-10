@@ -106,10 +106,10 @@
        are discovered by Builder.cs via directory scan, not declared as MSBuild
        items here, so register them explicitly. -->
   <ItemGroup>
-    <Watch Include="..\Content\Assets\**\*.fx" />
+    <Watch Include="..\Content\Assets\**\*.fx;..\Content\Assets\**\*.fxh" />
     <!-- Shaders owned by the library rather than this game (see
          MonoGameLibrary.csproj's BuildSharedContent target). -->
-    <Watch Include="..\MonoGameLibrary\SharedContent\**\*.fx" />
+    <Watch Include="..\MonoGameLibrary\SharedContent\**\*.fx;..\MonoGameLibrary\SharedContent\**\*.fxh" />
   </ItemGroup>
 
   <!-- When only rebuilding content (via BuildAndCopyContent above), stop dotnet

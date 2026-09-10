@@ -14,18 +14,14 @@ sampler2D SpriteTextureSampler = sampler_state
     Texture = <SpriteTexture>;
 };
 
-#include "3dEffect.fxh"
-
-float4 MainPS(VertexShaderOutput input) : COLOR
-{
-    return tex2D(SpriteTextureSampler,input.TextureCoordinates) * input.Color;
-}
+#include "../../../MonoGameLibrary/SharedContent/effects/3dEffect.fxh"
+#include "../../../MonoGameLibrary/SharedContent/effects/colors.fxh"
 
 technique SpriteDrawing
 {
     pass P0
     {
-        PixelShader = compile PS_SHADERMODEL MainPS();
         VertexShader = compile VS_SHADERMODEL MainVS();
+        PixelShader = compile PS_SHADERMODEL ColorSwapPS();
     }
 };
