@@ -8,6 +8,7 @@ using MonoGameGum;
 using Gum.Forms.Controls;
 using MonoGameGum.GueDeriving;
 using MonoGameLibrary;
+using MonoGameLibrary.Content;
 using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Scenes;
 
@@ -15,6 +16,10 @@ namespace DungeonSlime.Scenes;
 
 public class TitleScene : Scene
 {
+
+    // The 3d material  
+    private Material _3dMaterial;
+
     private SoundEffect _uiSoundEffect;
     private Panel _titleScreenButtonsPanel;
     private Panel _optionsPanel;
@@ -105,6 +110,15 @@ public class TitleScene : Scene
 
     public override void LoadContent()
     {
+
+        // Load the 3d effect 
+        _3dMaterial = Core.SharedContent.WatchMaterial("effects/3dEffect");
+        _3dMaterial.IsDebugVisible = true;
+
+        var camera = new SpriteCamera3d();
+        _3dMaterial.SetParameter("MatrixTransform", camera.CalculateMatrixTransform());
+        _3dMaterial.SetParameter("ScreenSize", new Vector2(Core.GraphicsDevice.Viewport.Width, Core.GraphicsDevice.Viewport.Height));
+
         // Load the font for the standard text.
         _font = Core.Content.Load<SpriteFont>("fonts/04B_30");
 
@@ -140,6 +154,14 @@ public class TitleScene : Scene
         _backgroundOffset.X %= _backgroundPattern.Width;
         _backgroundOffset.Y %= _backgroundPattern.Height;
 
+        // Enable hot reload
+        _3dMaterial.Update();
+        
+        var spinAmount = Core.Input.Mouse.X / (float)Core.GraphicsDevice.Viewport.Width;
+        spinAmount = MathHelper.SmoothStep(-.1f, .1f, spinAmount);
+        _3dMaterial.SetParameter("SpinAmount", spinAmount);
+
+
         GumService.Default.Update(gameTime);
     }
 
@@ -155,7 +177,10 @@ public class TitleScene : Scene
         if (_titleScreenButtonsPanel.IsVisible)
         {
             // Begin the sprite batch to prepare for rendering.
-            Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            Core.SpriteBatch.Begin(samplerState: 
+                SamplerState.PointClamp,
+                rasterizerState: RasterizerState.CullNone,
+                effect: _3dMaterial.Effect);
     
             // The color to use for the drop shadow text.
             Color dropShadowColor = Color.Black * 0.5f;
