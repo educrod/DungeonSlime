@@ -10,6 +10,8 @@ using MonoGameLibrary;
 using MonoGameLibrary.Content;
 using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Scenes;
+using Microsoft.Xna.Framework.Input;
+
 
 namespace DungeonSlime.Scenes;
 
@@ -21,6 +23,9 @@ public class GameScene : Scene
         Paused,
         GameOver
     }
+
+    private bool _debugPause = false;
+
 
     // Reference to the slime.
     private Slime _slime;
@@ -60,11 +65,22 @@ public class GameScene : Scene
 
     private TimeSpan _lastGrowTime;
 
+    // The deferred rendering resources  
+    private DeferredRenderer _deferredRenderer;
+
+    // A list of point lights to be rendered  
+    private List<PointLight> _lights = new List<PointLight>();
+
+
 
     public override void Initialize()
     {
         // LoadContent is called during base.Initialize().
         base.Initialize();
+
+        // Create the deferred rendering resources  
+        _deferredRenderer = new DeferredRenderer();
+
 
         // During the game scene, we want to disable exit on escape. Instead,
         // the escape key will be used to return back to the title screen.
@@ -90,6 +106,12 @@ public class GameScene : Scene
 
         // Initialize a new game to be played.
         InitializeNewGame();
+
+        _lights.Add(new PointLight
+        {
+            Position = new Vector2(300, 300),
+            Color = Color.CornflowerBlue
+        });
     }
 
     private void InitializeUI()
@@ -188,7 +210,7 @@ public class GameScene : Scene
 
         // Load the game material
         _gameMaterial = Content.WatchMaterial("effects/gameEffect");
-        _gameMaterial.IsDebugVisible = true;
+        _gameMaterial.IsDebugVisible = false;
         _gameMaterial.SetParameter("ColorMap", _colorMap);
         _camera = new SpriteCamera3d();
         _gameMaterial.SetParameter("MatrixTransform", _camera.CalculateMatrixTransform());
@@ -198,7 +220,12 @@ public class GameScene : Scene
 
     public override void Update(GameTime gameTime)
     {
-       
+        if (Core.Input.Keyboard.WasKeyJustPressed(Keys.P))
+        {
+            _debugPause = !_debugPause;
+        }
+        if (_debugPause) return;
+
 
         // Update the colorSwap material if it was changed
         _gameMaterial.Update();
@@ -451,7 +478,10 @@ public class GameScene : Scene
         Core.GraphicsDevice.Clear(new Color(32, 16, 20));
     
         _gameMaterial.SetParameter("Saturation", _saturation);
-
+        
+        // Start rendering to the deferred renderer
+        _deferredRenderer.StartColorPhase();
+        
         Core.SpriteBatch.Begin(
             samplerState: SamplerState.PointClamp,
             sortMode: SpriteSortMode.Immediate,
@@ -487,9 +517,20 @@ public class GameScene : Scene
 
         // Always end the sprite batch when finished.
         Core.SpriteBatch.End();
+
+        // start rendering the lights  
+        _deferredRenderer.StartLightPhase();
+        PointLight.Draw(Core.SpriteBatch, _lights, _deferredRenderer.ColorBuffer);
+
+        // TODO: draw lights  
+
+        _deferredRenderer.Finish();
     
         // Draw the UI.
         _ui.Draw();
+
+        // Render the debug view for the game  
+        _deferredRenderer.DebugDraw();
     }
 
 }
