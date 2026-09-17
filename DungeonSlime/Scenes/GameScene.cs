@@ -40,6 +40,10 @@ public class GameScene : Scene
     
     private Texture2D _colorMap;
 
+    // The normal texture atlas  
+    private Texture2D _normalAtlas;
+
+
     // Defines the bounds of the room that the slime and bat are contained within.
     private Rectangle _roomBounds;
 
@@ -208,6 +212,10 @@ public class GameScene : Scene
             [32] = Color.LightSteelBlue,
         }, false);      
 
+        // Load the normal maps  
+        _normalAtlas = Content.Load<Texture2D>("images/atlas-normal");
+
+
         // Load the game material
         _gameMaterial = Content.WatchMaterial("effects/gameEffect");
         _gameMaterial.IsDebugVisible = false;
@@ -215,6 +223,7 @@ public class GameScene : Scene
         _camera = new SpriteCamera3d();
         _gameMaterial.SetParameter("MatrixTransform", _camera.CalculateMatrixTransform());
         _gameMaterial.SetParameter("ScreenSize", new Vector2(Core.GraphicsDevice.Viewport.Width, Core.GraphicsDevice.Viewport.Height));
+        _gameMaterial.SetParameter("NormalMap", _normalAtlas);
 
     }
 
@@ -531,7 +540,7 @@ public class GameScene : Scene
         _ui.Draw();
 
         // Render the debug view for the game  
-        //_deferredRenderer.DebugDraw();
+        _deferredRenderer.DebugDraw();
     }
 
 }

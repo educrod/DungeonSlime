@@ -206,7 +206,7 @@ public class Core : Game
         SceneTransitionTextures.Add(Content.Load<Texture2D>("images/ripple"));
 
         PointLightMaterial = SharedContent.WatchMaterial("effects/pointLightEffect");
-        PointLightMaterial.IsDebugVisible = true;
+        PointLightMaterial.IsDebugVisible = false;
         PointLightMaterial.SetParameter("LightBrightness", .25f);
         PointLightMaterial.SetParameter("LightSharpness", .1f);
 

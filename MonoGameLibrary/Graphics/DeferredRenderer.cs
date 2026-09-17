@@ -15,6 +15,10 @@ public class DeferredRenderer
     /// </summary>  
     public RenderTarget2D LightBuffer { get; set; }
 
+    /// <summary>  
+    /// A texture that holds the normal sprite drawings  
+    /// </summary>  
+    public RenderTarget2D NormalBuffer { get; set; }
 
     public DeferredRenderer()
     {
@@ -35,13 +39,28 @@ public class DeferredRenderer
             mipMap: false,
             preferredFormat: SurfaceFormat.Color,
             preferredDepthFormat: DepthFormat.None);
+
+        NormalBuffer = new RenderTarget2D(
+            graphicsDevice: Core.GraphicsDevice,
+            width: viewport.Width,
+            height: viewport.Height,
+            mipMap: false,
+            preferredFormat: SurfaceFormat.Color,
+            preferredDepthFormat: DepthFormat.None);
     }
 
-    public void StartColorPhase()  
-    {  
-        // all future draw calls will be drawn to the color buffer  
-        Core.GraphicsDevice.SetRenderTarget(ColorBuffer);  
-        Core.GraphicsDevice.Clear(Color.Transparent);  
+    public void StartColorPhase()
+    {
+        // all future draw calls will be drawn to the color buffer and normal buffer
+        Core.GraphicsDevice.SetRenderTargets(new RenderTargetBinding[]
+        {
+            // gets the results from shader semantic COLOR0
+            new RenderTargetBinding(ColorBuffer),
+
+            // gets the results from shader semantic COLOR1
+            new RenderTargetBinding(NormalBuffer)
+        });
+        Core.GraphicsDevice.Clear(Color.Transparent);
     }
 
     public void StartLightPhase()  
@@ -85,6 +104,17 @@ public class DeferredRenderer
         // shrink the light rect by 8 pixels
         var lightRect = lightBorderRect;
         lightRect.Inflate(-8, -8);
+
+        // the debug view for the normal buffer lives in the bottom-left.
+        var normalBorderRect = new Rectangle(
+        x: viewportBounds.X,
+        y: viewportBounds.Height / 2,
+        width: viewportBounds.Width / 2,
+        height: viewportBounds.Height / 2);
+
+        // shrink the normal rect by 8 pixels  
+        var normalRect = normalBorderRect;
+        normalRect.Inflate(-8, -8);
     
 
         Core.SpriteBatch.Begin();
@@ -100,6 +130,12 @@ public class DeferredRenderer
     
         // draw the light buffer
         Core.SpriteBatch.Draw(LightBuffer, lightRect, Color.White);
+
+        // draw a debug border for the normal buffer
+        Core.SpriteBatch.Draw(Core.Pixel, normalBorderRect, Color.MintCream);
+
+        // draw the normal buffer
+        Core.SpriteBatch.Draw(NormalBuffer, normalRect, Color.White);
 
         Core.SpriteBatch.End();
     }
