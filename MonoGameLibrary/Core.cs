@@ -98,6 +98,10 @@ public class Core : Game
     /// </summary>  
     public static Material PointLightMaterial { get; private set; }
 
+    /// <summary>  
+    /// The material that combines the various off screen textures  
+    /// </summary>  
+    public static Material DeferredCompositeMaterial { get; private set; }
 
     /// <summary>  
     /// A set of grayscale gradient textures to use as transition guides  
@@ -205,6 +209,9 @@ public class Core : Game
         PointLightMaterial.IsDebugVisible = true;
         PointLightMaterial.SetParameter("LightBrightness", .25f);
         PointLightMaterial.SetParameter("LightSharpness", .1f);
+
+        DeferredCompositeMaterial = SharedContent.WatchMaterial("effects/deferredCompositeEffect");
+        DeferredCompositeMaterial.IsDebugVisible = true;
     }
 
     protected override void UnloadContent()
@@ -245,6 +252,7 @@ public class Core : Game
         SceneTransitionMaterial.SetParameter("Progress", SceneTransition.DirectionalRatio);
         SceneTransitionMaterial.Update();
         PointLightMaterial.Update();
+        DeferredCompositeMaterial.Update();
         
         base.Update(gameTime);
     }

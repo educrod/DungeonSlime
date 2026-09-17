@@ -525,12 +525,13 @@ public class GameScene : Scene
         // TODO: draw lights  
 
         _deferredRenderer.Finish();
+        _deferredRenderer.DrawComposite();
     
         // Draw the UI.
         _ui.Draw();
 
         // Render the debug view for the game  
-        _deferredRenderer.DebugDraw();
+        //_deferredRenderer.DebugDraw();
     }
 
 }

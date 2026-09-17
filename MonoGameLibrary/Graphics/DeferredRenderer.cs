@@ -76,13 +76,11 @@ public class DeferredRenderer
         colorRect.Inflate(-8, -8);
 
         // the debug view for the light buffer lives in the top-right.
-        //var lightBorderRect = new Rectangle(
-        //    x: viewportBounds.Width / 2, 
-        //    y: viewportBounds.Y, 
-        //    width: viewportBounds.Width / 2,
-        //    height: viewportBounds.Height / 2);
-
-        var lightBorderRect = viewportBounds; // TODO: remove this; it makes the light rect take up the whole screen.
+        var lightBorderRect = new Rectangle(
+            x: viewportBounds.Width / 2,
+            y: viewportBounds.Y,
+            width: viewportBounds.Width / 2,
+            height: viewportBounds.Height / 2);
     
         // shrink the light rect by 8 pixels
         var lightRect = lightBorderRect;
@@ -105,6 +103,16 @@ public class DeferredRenderer
 
         Core.SpriteBatch.End();
     }
-
+    public void DrawComposite(float ambient=.4f)
+    {
+        Core.DeferredCompositeMaterial.SetParameter("AmbientLight", ambient);
+        Core.DeferredCompositeMaterial.SetParameter("LightBuffer", LightBuffer);
+        var viewportBounds = Core.GraphicsDevice.Viewport.Bounds;
+        Core.SpriteBatch.Begin(
+            effect: Core.DeferredCompositeMaterial.Effect
+            );
+        Core.SpriteBatch.Draw(ColorBuffer, viewportBounds, Color.White);
+        Core.SpriteBatch.End();   
+    }
 
 }
