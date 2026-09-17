@@ -211,7 +211,7 @@ public class Core : Game
         PointLightMaterial.SetParameter("LightSharpness", .1f);
 
         DeferredCompositeMaterial = SharedContent.WatchMaterial("effects/deferredCompositeEffect");
-        DeferredCompositeMaterial.IsDebugVisible = true;
+        DeferredCompositeMaterial.IsDebugVisible = false;
     }
 
     protected override void UnloadContent()

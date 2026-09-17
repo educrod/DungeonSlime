@@ -111,11 +111,7 @@ public class GameScene : Scene
         // Initialize a new game to be played.
         InitializeNewGame();
 
-        _lights.Add(new PointLight
-        {
-            Position = new Vector2(300, 300),
-            Color = Color.CornflowerBlue
-        });
+        InitializeLights();
     }
 
     private void InitializeUI()
@@ -252,8 +248,16 @@ public class GameScene : Scene
         var slimePosition = new Vector2(_slime?.GetBounds().X ?? center.X, _slime?.GetBounds().Y ?? center.Y);
         var offset = .01f * (slimePosition - center);
         _camera.LookOffset = offset;
-        _gameMaterial.SetParameter("MatrixTransform", _camera.CalculateMatrixTransform());
+        
+        //_gameMaterial.SetParameter("MatrixTransform", _camera.CalculateMatrixTransform());
 
+        var matrixTransform = _camera.CalculateMatrixTransform();  
+        _gameMaterial.SetParameter("MatrixTransform", matrixTransform);  
+        Core.PointLightMaterial.SetParameter("MatrixTransform", matrixTransform);
+        Core.PointLightMaterial.SetParameter("ScreenSize", new Vector2(Core.GraphicsDevice.Viewport.Width, Core.GraphicsDevice.Viewport.Height));
+
+        // Move some lights around for artistic effect  
+        MoveLightsAround(gameTime);
 
         if (_state != GameState.Playing)
         {
@@ -296,6 +300,67 @@ public class GameScene : Scene
         // Perform collision checks.
         CollisionChecks(gameTime);
     }
+
+    private void MoveLightsAround(GameTime gameTime)
+    {
+        var t = (float)gameTime.TotalGameTime.TotalSeconds * .25f;
+        var bounds = Core.GraphicsDevice.Viewport.Bounds;
+        bounds.Inflate(-100, -100);
+
+        var halfWidth = bounds.Width / 2;
+        var halfHeight = bounds.Height / 2;
+        var center = new Vector2(halfWidth, halfHeight);
+        _lights[^1].Position = center + new Vector2(halfWidth * MathF.Cos(t), .7f * halfHeight * MathF.Sin(t * 1.1f));
+        _lights[^2].Position = center + new Vector2(halfWidth * MathF.Cos(t + MathHelper.Pi), halfHeight * MathF.Sin(t - MathHelper.Pi));
+    }
+
+
+    private void InitializeLights()
+    {
+        // torch 1
+        _lights.Add(new PointLight
+        {
+            Position = new Vector2(260, 100),
+            Color = Color.CornflowerBlue,
+            Radius = 500
+        });
+        // torch 2
+        _lights.Add(new PointLight
+        {
+            Position = new Vector2(520, 100),
+            Color = Color.CornflowerBlue,
+            Radius = 500
+        });
+        // torch 3
+        _lights.Add(new PointLight
+        {
+            Position = new Vector2(740, 100),
+            Color = Color.CornflowerBlue,
+            Radius = 500
+        });
+        // torch 4
+        _lights.Add(new PointLight
+        {
+            Position = new Vector2(1000, 100),
+            Color = Color.CornflowerBlue,
+            Radius = 500
+        });
+        
+        // random lights
+        _lights.Add(new PointLight
+        {
+            Position = new Vector2(Random.Shared.Next(50, 400),400),
+            Color = Color.MonoGameOrange,
+            Radius = 500
+        });
+        _lights.Add(new PointLight
+        {
+            Position = new Vector2(Random.Shared.Next(650, 1200),300),
+            Color = Color.MonoGameOrange,
+            Radius = 500
+        });
+    }
+
 
     private void CollisionChecks(GameTime gameTime)
     {
@@ -529,7 +594,7 @@ public class GameScene : Scene
 
         // start rendering the lights  
         _deferredRenderer.StartLightPhase();
-        PointLight.Draw(Core.SpriteBatch, _lights, _deferredRenderer.ColorBuffer);
+        PointLight.Draw(Core.SpriteBatch, _lights, _deferredRenderer.NormalBuffer);
 
         // TODO: draw lights  
 
@@ -539,8 +604,8 @@ public class GameScene : Scene
         // Draw the UI.
         _ui.Draw();
 
-        // Render the debug view for the game  
-        _deferredRenderer.DebugDraw();
+        // Render the debug view for the game
+        //_deferredRenderer.DebugDraw();
     }
 
 }
