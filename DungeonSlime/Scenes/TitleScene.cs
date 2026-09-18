@@ -113,7 +113,7 @@ public class TitleScene : Scene
 
         // Load the 3d effect 
         _3dMaterial = Core.SharedContent.WatchMaterial("effects/3dEffect");
-        _3dMaterial.IsDebugVisible = true;
+        _3dMaterial.IsDebugVisible = false;
 
         var camera = new SpriteCamera3d();
         _3dMaterial.SetParameter("MatrixTransform", camera.CalculateMatrixTransform());

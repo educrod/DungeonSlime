@@ -94,6 +94,16 @@ public class Core : Game
     public static Material SceneTransitionMaterial { get; private set; }
 
     /// <summary>  
+    /// The material that draws point lights  
+    /// </summary>  
+    public static Material PointLightMaterial { get; private set; }
+
+    /// <summary>  
+    /// The material that combines the various off screen textures  
+    /// </summary>  
+    public static Material DeferredCompositeMaterial { get; private set; }
+
+    /// <summary>  
     /// A set of grayscale gradient textures to use as transition guides  
     /// </summary>  
     
@@ -187,13 +197,21 @@ public class Core : Game
         base.LoadContent();  
         SceneTransitionMaterial = Content.WatchMaterial("effects/sceneTransitionEffect"); 
         SceneTransitionMaterial.SetParameter("EdgeWidth", .05f);
-        SceneTransitionMaterial.IsDebugVisible = true; 
+        SceneTransitionMaterial.IsDebugVisible = false; 
 
         SceneTransitionTextures = new List<Texture2D>();
         SceneTransitionTextures.Add(Content.Load<Texture2D>("images/angled"));
         SceneTransitionTextures.Add(Content.Load<Texture2D>("images/concave"));
         SceneTransitionTextures.Add(Content.Load<Texture2D>("images/radial"));
         SceneTransitionTextures.Add(Content.Load<Texture2D>("images/ripple"));
+
+        PointLightMaterial = SharedContent.WatchMaterial("effects/pointLightEffect");
+        PointLightMaterial.IsDebugVisible = false;
+        PointLightMaterial.SetParameter("LightBrightness", .25f);
+        PointLightMaterial.SetParameter("LightSharpness", .1f);
+
+        DeferredCompositeMaterial = SharedContent.WatchMaterial("effects/deferredCompositeEffect");
+        DeferredCompositeMaterial.IsDebugVisible = false;
     }
 
     protected override void UnloadContent()
@@ -233,6 +251,8 @@ public class Core : Game
         // Check if the scene transition material needs to be reloaded.
         SceneTransitionMaterial.SetParameter("Progress", SceneTransition.DirectionalRatio);
         SceneTransitionMaterial.Update();
+        PointLightMaterial.Update();
+        DeferredCompositeMaterial.Update();
         
         base.Update(gameTime);
     }
