@@ -75,6 +75,8 @@ public class GameScene : Scene
     // A list of point lights to be rendered  
     private List<PointLight> _lights = new List<PointLight>();
 
+    // A list of shadow casters for all the lights  
+    private List<ShadowCaster> _shadowCasters = new List<ShadowCaster>();
 
 
     public override void Initialize()
@@ -257,7 +259,7 @@ public class GameScene : Scene
         Core.PointLightMaterial.SetParameter("ScreenSize", new Vector2(Core.GraphicsDevice.Viewport.Width, Core.GraphicsDevice.Viewport.Height));
 
         // Move some lights around for artistic effect  
-        MoveLightsAround(gameTime);
+        //MoveLightsAround(gameTime);
 
         if (_state != GameState.Playing)
         {
@@ -317,6 +319,7 @@ public class GameScene : Scene
 
     private void InitializeLights()
     {
+        /*
         // torch 1
         _lights.Add(new PointLight
         {
@@ -358,6 +361,22 @@ public class GameScene : Scene
             Position = new Vector2(Random.Shared.Next(650, 1200),300),
             Color = Color.MonoGameOrange,
             Radius = 500
+        });
+        */
+        
+        // torch 1
+        _lights.Add(new PointLight
+        {
+            Position = new Vector2(500, 360),
+            Color = Color.CornflowerBlue,
+            Radius = 700
+        });
+
+        // simple shadow caster
+        _shadowCasters.Add(new ShadowCaster
+        {
+            A = new Vector2(700, 320),
+            B = new Vector2(700, 400)
         });
     }
 
@@ -592,6 +611,9 @@ public class GameScene : Scene
         // Always end the sprite batch when finished.
         Core.SpriteBatch.End();
 
+        // render the shadow buffers
+        PointLight.DrawShadows(_lights, _shadowCasters);
+
         // start rendering the lights  
         _deferredRenderer.StartLightPhase();
         PointLight.Draw(Core.SpriteBatch, _lights, _deferredRenderer.NormalBuffer);
@@ -600,6 +622,10 @@ public class GameScene : Scene
 
         _deferredRenderer.Finish();
         _deferredRenderer.DrawComposite();
+
+        Core.SpriteBatch.Begin();
+        Core.SpriteBatch.Draw(_lights[0].ShadowBuffer, Vector2.Zero, Color.White);
+        Core.SpriteBatch.End();
     
         // Draw the UI.
         _ui.Draw();

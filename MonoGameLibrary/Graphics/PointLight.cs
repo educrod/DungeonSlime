@@ -17,9 +17,52 @@ public class PointLight
     public Color Color { get; set; } = Color.White;
 
     /// <summary>
+    /// The render target that holds the shadow map
+    /// </summary>
+    public RenderTarget2D ShadowBuffer { get; set; }
+
+
+    /// <summary>
     /// The radius of the light in pixels
     /// </summary>
     public int Radius { get; set; } = 250;
+
+    public PointLight()
+    {
+        var viewPort = Core.GraphicsDevice.Viewport;
+        ShadowBuffer = new RenderTarget2D(Core.GraphicsDevice, viewPort.Width, viewPort.Height, false, SurfaceFormat.Color,  DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+    }
+
+    public void DrawShadowBuffer(List<ShadowCaster> shadowCasters)
+    {
+        Core.GraphicsDevice.SetRenderTarget(ShadowBuffer);
+        Core.GraphicsDevice.Clear(Color.Black);
+    
+        Core.ShadowHullMaterial.SetParameter("LightPosition", Position);
+        var screenSize = new Vector2(ShadowBuffer.Width, ShadowBuffer.Height);
+        Core.SpriteBatch.Begin(
+                effect: Core.ShadowHullMaterial.Effect, 
+                rasterizerState: RasterizerState.CullNone
+                );
+        foreach (var caster in shadowCasters)
+        {
+            var posA = caster.A;
+            // TODO: pack the (B-A) vector into the color channel.
+            Core.SpriteBatch.Draw(Core.Pixel, posA, Color.White);
+        }
+        Core.SpriteBatch.End();
+    }
+
+    public static void DrawShadows(
+        List<PointLight> pointLights,
+        List<ShadowCaster> shadowCasters)
+    {
+        foreach (var light in pointLights)
+        {
+            light.DrawShadowBuffer(shadowCasters);
+        }
+    }
+
 
     public static void Draw(SpriteBatch spriteBatch, List<PointLight> pointLights, Texture2D normalBuffer)
     {
