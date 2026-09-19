@@ -627,10 +627,6 @@ public class GameScene : Scene
         _deferredRenderer.Finish();
         _deferredRenderer.DrawComposite();
 
-        Core.SpriteBatch.Begin();
-        Core.SpriteBatch.Draw(_lights[0].ShadowBuffer, Vector2.Zero, Color.White);
-        Core.SpriteBatch.End();
-    
         // Draw the UI.
         _ui.Draw();
 

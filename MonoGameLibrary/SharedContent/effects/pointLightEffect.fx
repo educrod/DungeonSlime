@@ -22,6 +22,13 @@ sampler2D NormalBufferSampler = sampler_state
    Texture = <NormalBuffer>;  
 };
 
+Texture2D ShadowBuffer;  
+sampler2D ShadowBufferSampler = sampler_state  
+{  
+   Texture = <ShadowBuffer>;  
+};
+
+
 struct LightVertexShaderOutput  
 {  
    float4 Position : SV_POSITION;  
@@ -64,6 +71,8 @@ float4 MainPS(LightVertexShaderOutput input) : COLOR {
     float2 screenCoords = .5*(input.ScreenData.xy + 1);
     screenCoords.y = 1 - screenCoords.y;
 
+    float shadow = tex2D(ShadowBufferSampler,screenCoords).r;
+
     float4 normal = tex2D(NormalBufferSampler,screenCoords);
     // flip the y of the normals, because the art assets have them backwards.
     normal.y = 1 - normal.y;
@@ -78,7 +87,7 @@ float4 MainPS(LightVertexShaderOutput input) : COLOR {
     float lightAmount = (dot(normalDir, lightDir));
 
     float4 color = input.Color;
-    color.a *= falloff * lightAmount;
+    color.a *= falloff * lightAmount * shadow;
     return color;
 }
 

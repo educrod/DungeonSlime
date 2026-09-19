@@ -62,10 +62,9 @@ VertexShaderOutput ShadowHullVS(VertexShaderInput input)
     return output;  
 }
 
-
-float4 MainPS(VertexShaderOutput input) : COLOR
-{
-	return 1; // return white  
+float4 MainPS(VertexShaderOutput input) : COLOR  
+{  
+    return float4(0,0,0,1); // return black  
 }
 
 technique BasicColorDrawing

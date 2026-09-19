@@ -36,7 +36,7 @@ public class PointLight
     public void DrawShadowBuffer(List<ShadowCaster> shadowCasters)
     {
         Core.GraphicsDevice.SetRenderTarget(ShadowBuffer);
-        Core.GraphicsDevice.Clear(Color.Black);
+        Core.GraphicsDevice.Clear(Color.White);
     
         Core.ShadowHullMaterial.SetParameter("LightPosition", Position);
         var screenSize = new Vector2(ShadowBuffer.Width, ShadowBuffer.Height);
@@ -85,11 +85,13 @@ public class PointLight
         Core.PointLightMaterial.SetParameter("NormalBuffer", normalBuffer);
         spriteBatch.Begin(
             effect: Core.PointLightMaterial.Effect,
-            blendState: BlendState.Additive
+            blendState: BlendState.Additive,
+            sortMode: SpriteSortMode.Immediate
             );
 
         foreach (var light in pointLights)
         {
+            Core.PointLightMaterial.SetParameter("ShadowBuffer", light.ShadowBuffer);
             var diameter = light.Radius * 2;
             var rect = new Rectangle((int)(light.Position.X - light.Radius), (int)(light.Position.Y - light.Radius), diameter, diameter);
             spriteBatch.Draw(normalBuffer, rect, light.Color);
