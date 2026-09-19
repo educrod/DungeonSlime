@@ -47,8 +47,9 @@ public class PointLight
         foreach (var caster in shadowCasters)
         {
             var posA = caster.A;
-            // TODO: pack the (B-A) vector into the color channel.
-            Core.SpriteBatch.Draw(Core.Pixel, posA, Color.White);
+            var aToB = (caster.B - caster.A) / screenSize;
+            var packed = PackVector2_SNorm(aToB);
+            Core.SpriteBatch.Draw(Core.Pixel, posA, packed);
         }
         Core.SpriteBatch.End();
     }
@@ -63,6 +64,21 @@ public class PointLight
         }
     }
 
+    public static Color PackVector2_SNorm(Vector2 vec)  
+    {  
+        // Clamp to [-1, 1)  
+        vec = Vector2.Clamp(vec, new Vector2(-1f), new Vector2(1f - 1f / 32768f));  
+    
+        short xInt = (short)(vec.X * 32767f); // signed 16-bit  
+        short yInt = (short)(vec.Y * 32767f);  
+    
+        byte r = (byte)((xInt >> 8) & 0xFF);  
+        byte g = (byte)(xInt & 0xFF);  
+        byte b = (byte)((yInt >> 8) & 0xFF);  
+        byte a = (byte)(yInt & 0xFF);  
+    
+        return new Color(r, g, b, a);  
+    }
 
     public static void Draw(SpriteBatch spriteBatch, List<PointLight> pointLights, Texture2D normalBuffer)
     {

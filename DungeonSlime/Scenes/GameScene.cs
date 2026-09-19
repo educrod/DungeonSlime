@@ -258,6 +258,10 @@ public class GameScene : Scene
         Core.PointLightMaterial.SetParameter("MatrixTransform", matrixTransform);
         Core.PointLightMaterial.SetParameter("ScreenSize", new Vector2(Core.GraphicsDevice.Viewport.Width, Core.GraphicsDevice.Viewport.Height));
 
+        Core.ShadowHullMaterial.SetParameter("MatrixTransform", matrixTransform);
+        Core.ShadowHullMaterial.SetParameter("ScreenSize", new Vector2(Core.GraphicsDevice.Viewport.Width, Core.GraphicsDevice.Viewport.Height));
+
+
         // Move some lights around for artistic effect  
         //MoveLightsAround(gameTime);
 
