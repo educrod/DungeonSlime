@@ -46,11 +46,17 @@ public class PointLight
                 );
         foreach (var caster in shadowCasters)
         {
-            var posA = caster.A;
-            var aToB = (caster.B - caster.A) / screenSize;
-            var packed = PackVector2_SNorm(aToB);
-            Core.SpriteBatch.Draw(Core.Pixel, posA, packed);
+            for (var i = 0; i < caster.Points.Count; i++)
+            {
+                var a = caster.Position + caster.Points[i];
+                var b = caster.Position + caster.Points[(i + 1) % caster.Points.Count];
+    
+                var aToB = (b - a) / screenSize;
+                var packed = PackVector2_SNorm(aToB);
+                Core.SpriteBatch.Draw(Core.Pixel, a, packed);
+            }
         }
+    
         Core.SpriteBatch.End();
     }
 

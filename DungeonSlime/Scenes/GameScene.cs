@@ -377,11 +377,14 @@ public class GameScene : Scene
         });
 
         // simple shadow caster
+        _shadowCasters.Add(ShadowCaster.SimplePolygon(_slime.GetBounds().Location, radius: 30, sides: 6));
+        /*
         _shadowCasters.Add(new ShadowCaster
         {
             A = new Vector2(700, 320),
             B = new Vector2(700, 400)
         });
+        */ 
     }
 
 
