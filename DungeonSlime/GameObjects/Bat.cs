@@ -24,6 +24,12 @@ public class Bat
     /// </summary>
     public Vector2 Position { get; set;}
 
+    /// <summary>  
+    /// The shadow caster for this bat  
+    /// </summary>  
+    public ShadowCaster ShadowCaster { get; private set; }
+
+
     /// <summary>
     /// Creates a new Bat using the specified animated sprite and sound effect.
     /// </summary>
@@ -33,6 +39,8 @@ public class Bat
     {
         _sprite = sprite;
         _bounceSoundEffect = bounceSoundEffect;
+
+        ShadowCaster = ShadowCaster.SimplePolygon(Point.Zero, radius: 10, sides: 12);
     }
 
     /// <summary>
@@ -121,6 +129,10 @@ public class Bat
     public void Draw()
     {
         _sprite.Draw(Core.SpriteBatch, Position);
+        
+        // Update the position of the shadow caster. Move it up a bit due to the bat's artwork.  
+        var size = new Vector2(_sprite.Width, _sprite.Height);
+        ShadowCaster.Position = Position - Vector2.UnitY * 10 + size * .5f;
     }
 
 }

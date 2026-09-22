@@ -323,7 +323,6 @@ public class GameScene : Scene
 
     private void InitializeLights()
     {
-        /*
         // torch 1
         _lights.Add(new PointLight
         {
@@ -352,7 +351,7 @@ public class GameScene : Scene
             Color = Color.CornflowerBlue,
             Radius = 500
         });
-        
+
         // random lights
         _lights.Add(new PointLight
         {
@@ -366,27 +365,19 @@ public class GameScene : Scene
             Color = Color.MonoGameOrange,
             Radius = 500
         });
-        */
-        
-        // torch 1
-        _lights.Add(new PointLight
-        {
-            Position = new Vector2(500, 360),
-            Color = Color.CornflowerBlue,
-            Radius = 700
-        });
 
-        // simple shadow caster
-        _shadowCasters.Add(ShadowCaster.SimplePolygon(_slime.GetBounds().Location, radius: 30, sides: 6));
-        /*
-        _shadowCasters.Add(new ShadowCaster
-        {
-            A = new Vector2(700, 320),
-            B = new Vector2(700, 400)
+        var tileUnit = new Vector2(_tilemap.TileWidth, _tilemap.TileHeight);  
+        var size = new Vector2(_tilemap.Columns, _tilemap.Rows);  
+        _shadowCasters.Add(new ShadowCaster  
+        {  
+            Points = new List<Vector2>  
+            {        tileUnit * new Vector2(1, 1),  
+                tileUnit * new Vector2(size.X - 1, 1),  
+                tileUnit * new Vector2(size.X - 1, size.Y - 1),  
+                tileUnit * new Vector2(1, size.Y - 1),  
+            }  
         });
-        */ 
     }
-
 
     private void CollisionChecks(GameTime gameTime)
     {
@@ -613,14 +604,16 @@ public class GameScene : Scene
             _gameMaterial.SetParameter("ColorMap", map);
         });
 
-    
-
         // Always end the sprite batch when finished.
         Core.SpriteBatch.End();
 
-        // render the shadow buffers
-        PointLight.DrawShadows(_lights, _shadowCasters);
-
+        // render the shadow buffers  
+        var casters = new List<ShadowCaster>();
+        casters.AddRange(_shadowCasters);
+        casters.AddRange(_slime.ShadowCasters);
+        casters.Add(_bat.ShadowCaster);  
+        PointLight.DrawShadows(_lights, casters);
+        
         // start rendering the lights  
         _deferredRenderer.StartLightPhase();
         PointLight.Draw(Core.SpriteBatch, _lights, _deferredRenderer.NormalBuffer);
