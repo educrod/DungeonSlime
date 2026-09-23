@@ -1,10 +1,25 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-
+using System.Collections.Generic;
 namespace MonoGameLibrary.Graphics;
 
 public class DeferredRenderer
 {
+    /// <summary>  
+    /// The state used when writing shadow hulls  
+    /// </summary>  
+    private DepthStencilState _stencilWrite;
+
+    /// <summary>  
+    /// The state used when drawing point lights  
+    /// </summary>  
+    private DepthStencilState _stencilTest;
+
+    /// <summary>  
+    /// A custom blend state that wont write any color data  
+    /// </summary>  
+    private BlendState _shadowBlendState;
+
     /// <summary>
     /// A texture that holds the unlit sprite drawings
     /// </summary>
@@ -38,7 +53,7 @@ public class DeferredRenderer
             height: viewport.Height,
             mipMap: false,
             preferredFormat: SurfaceFormat.Color,
-            preferredDepthFormat: DepthFormat.None);
+            preferredDepthFormat: DepthFormat.Depth24Stencil8);
 
         NormalBuffer = new RenderTarget2D(
             graphicsDevice: Core.GraphicsDevice,
@@ -47,6 +62,51 @@ public class DeferredRenderer
             mipMap: false,
             preferredFormat: SurfaceFormat.Color,
             preferredDepthFormat: DepthFormat.None);
+
+         _stencilWrite = new DepthStencilState
+        {
+            // instruct MonoGame to use the stencil buffer
+            StencilEnable = true,
+
+            // instruct every fragment to interact with the stencil buffer
+            StencilFunction = CompareFunction.Always,
+
+            // every operation will replace the current value in the stencil buffer
+            //  with whatever value is in the ReferenceStencil variable
+            StencilPass = StencilOperation.Replace,
+
+            // this is the value that will be written into the stencil buffer
+            ReferenceStencil = 1,
+
+            // ignore depth from the stencil buffer write/reads  
+            DepthBufferEnable = false
+        };
+        
+        _stencilTest = new DepthStencilState
+        {
+            // instruct MonoGame to use the stencil buffer
+            StencilEnable = true,
+
+            // instruct only fragments that have a current value EQUAl to the
+            //  ReferenceStencil value to interact
+            StencilFunction = CompareFunction.Equal,
+
+            // shadow hulls wrote `1`, so `0` means "not" shadow. 
+            ReferenceStencil = 0,
+
+            // do not change the value of the stencil buffer. KEEP the current value.
+            StencilPass = StencilOperation.Keep,
+
+            // ignore depth from the stencil buffer write/reads
+            DepthBufferEnable = false
+        };
+        
+        _shadowBlendState = new BlendState  
+        {  
+            // no color channels will be written into the render target  
+            ColorWriteChannels = ColorWriteChannels.None  
+        };
+           
     }
 
     public void StartColorPhase()
@@ -62,14 +122,6 @@ public class DeferredRenderer
         });
         Core.GraphicsDevice.Clear(Color.Transparent);
     }
-
-    public void StartLightPhase()  
-    {  
-        // all future draw calls will be drawn to the light buffer  
-        Core.GraphicsDevice.SetRenderTarget(LightBuffer);  
-        Core.GraphicsDevice.Clear(Color.Black);  
-    }
-
 
     public void Finish()
     {
@@ -150,5 +202,55 @@ public class DeferredRenderer
         Core.SpriteBatch.Draw(ColorBuffer, viewportBounds, Color.White);
         Core.SpriteBatch.End();   
     }
+
+    public void DrawLights(List<PointLight> lights, List<ShadowCaster> shadowCasters)
+    {
+        Core.GraphicsDevice.SetRenderTarget(LightBuffer);
+        Core.GraphicsDevice.Clear(Color.Black);
+    
+        foreach (var light in lights)
+        {
+            var diameter = light.Radius * 2;
+            var rect = new Rectangle(
+                (int)(light.Position.X - light.Radius),
+                (int)(light.Position.Y - light.Radius),
+                diameter, diameter);
+
+            Core.GraphicsDevice.Clear(ClearOptions.Stencil, Color.Black, 0, 0);
+    
+            Core.ShadowHullMaterial.SetParameter("LightPosition", light.Position);
+            Core.SpriteBatch.Begin(
+                depthStencilState: _stencilWrite,
+                effect: Core.ShadowHullMaterial.Effect,
+                blendState: _shadowBlendState,
+                rasterizerState: RasterizerState.CullNone
+            );
+    
+            foreach (var caster in shadowCasters)
+            {
+                for (var i = 0; i < caster.Points.Count; i++)
+                {
+                    var a = caster.Position + caster.Points[i];
+                    var b = caster.Position + caster.Points[(i + 1) % caster.Points.Count];
+    
+                    var screenSize = new Vector2(LightBuffer.Width, LightBuffer.Height);
+                    var aToB = (b - a) / screenSize;
+                    var packed = PointLight.PackVector2_SNorm(aToB);
+                    Core.SpriteBatch.Draw(Core.Pixel, a, packed);
+                }
+            }
+            Core.SpriteBatch.End();
+    
+            Core.SpriteBatch.Begin(
+                depthStencilState: _stencilTest,
+                effect: Core.PointLightMaterial.Effect,
+                blendState: BlendState.Additive
+            );
+    
+            Core.SpriteBatch.Draw(NormalBuffer, rect, light.Color);
+            Core.SpriteBatch.End();
+        }
+    }
+
 
 }

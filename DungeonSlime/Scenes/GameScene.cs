@@ -612,12 +612,9 @@ public class GameScene : Scene
         casters.AddRange(_shadowCasters);
         casters.AddRange(_slime.ShadowCasters);
         casters.Add(_bat.ShadowCaster);  
-        PointLight.DrawShadows(_lights, casters);
         
         // start rendering the lights  
-        _deferredRenderer.StartLightPhase();
-        PointLight.Draw(Core.SpriteBatch, _lights, _deferredRenderer.NormalBuffer);
-
+        _deferredRenderer.DrawLights(_lights, casters);
         // TODO: draw lights  
 
         _deferredRenderer.Finish();

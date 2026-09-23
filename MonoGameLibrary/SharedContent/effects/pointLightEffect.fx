@@ -7,6 +7,7 @@
 	#define PS_SHADERMODEL ps_4_0_level_9_1
 #endif
 #include "3dEffect.fxh"
+
 Texture2D SpriteTexture;
 float LightBrightness; 
 float LightSharpness;  
@@ -21,13 +22,6 @@ sampler2D NormalBufferSampler = sampler_state
 {  
    Texture = <NormalBuffer>;  
 };
-
-Texture2D ShadowBuffer;  
-sampler2D ShadowBufferSampler = sampler_state  
-{  
-   Texture = <ShadowBuffer>;  
-};
-
 
 struct LightVertexShaderOutput  
 {  
@@ -70,11 +64,9 @@ float4 MainPS(LightVertexShaderOutput input) : COLOR {
     // put the clip-space coordinates into screen space.
     float2 screenCoords = .5*(input.ScreenData.xy + 1);
     screenCoords.y = 1 - screenCoords.y;
-
-    float shadow = tex2D(ShadowBufferSampler,screenCoords).r;
-
-    float4 normal = tex2D(NormalBufferSampler,screenCoords);
-    // flip the y of the normals, because the art assets have them backwards.
+   
+   float4 normal = tex2D(NormalBufferSampler,screenCoords);
+   // flip the y of the normals, because the art assets have them backwards.
     normal.y = 1 - normal.y;
 
     // convert from [0,1] to [-1,1]
@@ -87,7 +79,7 @@ float4 MainPS(LightVertexShaderOutput input) : COLOR {
     float lightAmount = (dot(normalDir, lightDir));
 
     float4 color = input.Color;
-    color.a *= falloff * lightAmount * shadow;
+    color.a *= falloff * lightAmount; 
     return color;
 }
 
