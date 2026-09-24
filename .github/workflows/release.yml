@@ -18,6 +18,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+          # Excludes the "game-content" artifact (build.yml's shared MGCB
+          # output, not a platform build) - without this, the packaging loop
+          # below treats it as one and fails trying to chmod a DungeonSlime
+          # binary that doesn't exist in it.
+          pattern: DungeonSlime-*
 
       - name: Package each platform build
         run: |
