@@ -74,10 +74,35 @@ VertexShaderOutput ShadowHullVS(VertexShaderInput input)
    return output;  
 }
 
-float4 MainPS(VertexShaderOutput input) : COLOR  
-{  
-   clip(input.Color.a);
-   return float4(0,0,0,1); // return black  
+// Bayer 4x4 values normalized
+static const float bayer4x4[16] = {
+    0.0/16.0,  8.0/16.0,  2.0/16.0, 10.0/16.0,
+   12.0/16.0,  4.0/16.0, 14.0/16.0,  6.0/16.0,
+    3.0/16.0, 11.0/16.0,  1.0/16.0,  9.0/16.0,
+   15.0/16.0,  7.0/16.0, 13.0/16.0,  5.0/16.0
+};
+
+float ShadowFadeStartDistance;
+float ShadowFadeEndDistance;
+
+float4 MainPS(VertexShaderOutput input) : COLOR {
+    // get an ordered dither value
+    int2 pixel = int2(input.TextureCoordinates * ScreenSize);
+    int idx = (pixel.x % 4) + (pixel.y % 4) * 4;
+    float ditherValue = bayer4x4[idx];
+
+    // produce the fade-out gradient
+    float maxDistance = ScreenSize.x + ScreenSize.y;
+    float endDistance = ShadowFadeEndDistance;
+    float startDistance = ShadowFadeStartDistance;
+    float fade = saturate((input.TextureCoordinates.x - endDistance) / (startDistance - endDistance));
+
+    if (ditherValue > fade) {
+        clip(-1);
+    }
+
+    clip(input.Color.a);
+    return float4(0,0,0,1); // return black
 }
 
 technique BasicColorDrawing

@@ -217,10 +217,10 @@ public class Core : Game
         PointLightMaterial.SetParameter("LightSharpness", .1f);
 
         DeferredCompositeMaterial = SharedContent.WatchMaterial("effects/deferredCompositeEffect");
-        DeferredCompositeMaterial.IsDebugVisible = true;
+        DeferredCompositeMaterial.IsDebugVisible = false;
 
         ShadowHullMaterial = SharedContent.WatchMaterial("effects/shadowHullEffect");
-        ShadowHullMaterial.IsDebugVisible = false;
+        ShadowHullMaterial.IsDebugVisible = true;
     }
 
     protected override void UnloadContent()
@@ -264,6 +264,8 @@ public class Core : Game
         DeferredCompositeMaterial.SetParameter("ScreenSize", new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height));
         DeferredCompositeMaterial.SetParameter("BoxBlurStride", .18f);
         DeferredCompositeMaterial.Update();
+        ShadowHullMaterial.SetParameter("ShadowFadeStartDistance", .013f);  
+        ShadowHullMaterial.SetParameter("ShadowFadeEndDistance", .13f);
         ShadowHullMaterial.Update();
         
         base.Update(gameTime);
