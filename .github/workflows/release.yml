@@ -27,7 +27,8 @@ jobs:
       - name: Package each platform build
         run: |
           cd artifacts
-          for dir in */; do
+          shopt -s nullglob
+          for dir in DungeonSlime-*/; do
             name="${dir%/}"
             if [[ "$name" == *windows* ]]; then
               (cd "$name" && zip -r "../${name}.zip" .)
