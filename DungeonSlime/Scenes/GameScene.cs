@@ -75,6 +75,8 @@ public class GameScene : Scene
     // A list of point lights to be rendered  
     private List<PointLight> _lights = new List<PointLight>();
 
+    // A list of shadow casters for all the lights  
+    private List<ShadowCaster> _shadowCasters = new List<ShadowCaster>();
 
 
     public override void Initialize()
@@ -256,8 +258,8 @@ public class GameScene : Scene
         Core.PointLightMaterial.SetParameter("MatrixTransform", matrixTransform);
         Core.PointLightMaterial.SetParameter("ScreenSize", new Vector2(Core.GraphicsDevice.Viewport.Width, Core.GraphicsDevice.Viewport.Height));
 
-        // Move some lights around for artistic effect  
-        MoveLightsAround(gameTime);
+        Core.ShadowHullMaterial.SetParameter("MatrixTransform", matrixTransform);
+        Core.ShadowHullMaterial.SetParameter("ScreenSize", new Vector2(Core.GraphicsDevice.Viewport.Width, Core.GraphicsDevice.Viewport.Height));
 
         if (_state != GameState.Playing)
         {
@@ -301,20 +303,6 @@ public class GameScene : Scene
         CollisionChecks(gameTime);
     }
 
-    private void MoveLightsAround(GameTime gameTime)
-    {
-        var t = (float)gameTime.TotalGameTime.TotalSeconds * .25f;
-        var bounds = Core.GraphicsDevice.Viewport.Bounds;
-        bounds.Inflate(-100, -100);
-
-        var halfWidth = bounds.Width / 2;
-        var halfHeight = bounds.Height / 2;
-        var center = new Vector2(halfWidth, halfHeight);
-        _lights[^1].Position = center + new Vector2(halfWidth * MathF.Cos(t), .7f * halfHeight * MathF.Sin(t * 1.1f));
-        _lights[^2].Position = center + new Vector2(halfWidth * MathF.Cos(t + MathHelper.Pi), halfHeight * MathF.Sin(t - MathHelper.Pi));
-    }
-
-
     private void InitializeLights()
     {
         // torch 1
@@ -322,42 +310,23 @@ public class GameScene : Scene
         {
             Position = new Vector2(260, 100),
             Color = Color.CornflowerBlue,
-            Radius = 500
+            Radius = 600
         });
+
         // torch 2
-        _lights.Add(new PointLight
-        {
-            Position = new Vector2(520, 100),
-            Color = Color.CornflowerBlue,
-            Radius = 500
-        });
-        // torch 3
-        _lights.Add(new PointLight
-        {
-            Position = new Vector2(740, 100),
-            Color = Color.CornflowerBlue,
-            Radius = 500
-        });
-        // torch 4
         _lights.Add(new PointLight
         {
             Position = new Vector2(1000, 100),
             Color = Color.CornflowerBlue,
-            Radius = 500
+            Radius = 600
         });
-        
-        // random lights
+
+        // underlight
         _lights.Add(new PointLight
         {
-            Position = new Vector2(Random.Shared.Next(50, 400),400),
+            Position = new Vector2(600, 660),
             Color = Color.MonoGameOrange,
-            Radius = 500
-        });
-        _lights.Add(new PointLight
-        {
-            Position = new Vector2(Random.Shared.Next(650, 1200),300),
-            Color = Color.MonoGameOrange,
-            Radius = 500
+            Radius = 1200
         });
     }
 
@@ -587,20 +556,29 @@ public class GameScene : Scene
             _gameMaterial.SetParameter("ColorMap", map);
         });
 
-    
-
         // Always end the sprite batch when finished.
         Core.SpriteBatch.End();
 
-        // start rendering the lights  
-        _deferredRenderer.StartLightPhase();
-        PointLight.Draw(Core.SpriteBatch, _lights, _deferredRenderer.NormalBuffer);
-
-        // TODO: draw lights  
+        // render the shadow buffers  
+        var casters = new List<ShadowCaster>();
+        casters.AddRange(_shadowCasters);
+        casters.AddRange(_slime.ShadowCasters);
+        casters.Add(_bat.ShadowCaster);  
+        
+        // start rendering the lights
+        _deferredRenderer.DrawLights(_lights, casters, (blend, stencil) =>
+        {
+           Core.SpriteBatch.Begin(
+              effect: _gameMaterial.Effect,
+              depthStencilState: stencil,
+              blendState: blend);
+           _slime.Draw(_ => {});
+           Core.SpriteBatch.End();
+        });
 
         _deferredRenderer.Finish();
         _deferredRenderer.DrawComposite();
-    
+
         // Draw the UI.
         _ui.Draw();
 

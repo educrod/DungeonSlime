@@ -104,6 +104,12 @@ public class Core : Game
     public static Material DeferredCompositeMaterial { get; private set; }
 
     /// <summary>  
+    /// The  material that draws shadow hulls  
+    /// </summary>  
+    public static Material ShadowHullMaterial { get; private set; }
+
+
+    /// <summary>  
     /// A set of grayscale gradient textures to use as transition guides  
     /// </summary>  
     
@@ -212,6 +218,9 @@ public class Core : Game
 
         DeferredCompositeMaterial = SharedContent.WatchMaterial("effects/deferredCompositeEffect");
         DeferredCompositeMaterial.IsDebugVisible = false;
+
+        ShadowHullMaterial = SharedContent.WatchMaterial("effects/shadowHullEffect");
+        ShadowHullMaterial.IsDebugVisible = true;
     }
 
     protected override void UnloadContent()
@@ -252,7 +261,13 @@ public class Core : Game
         SceneTransitionMaterial.SetParameter("Progress", SceneTransition.DirectionalRatio);
         SceneTransitionMaterial.Update();
         PointLightMaterial.Update();
+        DeferredCompositeMaterial.SetParameter("ScreenSize", new Vector2(GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height));
+        DeferredCompositeMaterial.SetParameter("BoxBlurStride", .18f);
         DeferredCompositeMaterial.Update();
+        ShadowHullMaterial.SetParameter("ShadowFadeStartDistance", .013f);  
+        ShadowHullMaterial.SetParameter("ShadowFadeEndDistance", .13f);
+        ShadowHullMaterial.SetParameter("ShadowIntensity", .85f);
+        ShadowHullMaterial.Update();
         
         base.Update(gameTime);
     }

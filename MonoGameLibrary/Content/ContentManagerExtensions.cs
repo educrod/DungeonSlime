@@ -38,9 +38,16 @@ public static class ContentManagerExtensions
             if (arg == "--no-reload") return;
         }
 
-        // identify the project directory
+        // identify the project directory by walking up from the compiled
+        // assembly's own location (bin/<Config>/<TFM>/), not the process's
+        // current directory - the latter is only the project folder when the
+        // app happens to be launched from inside it (e.g. `dotnet run` after
+        // cd'ing there), and is otherwise wherever the invoking shell was
+        // (e.g. the repo root for `dotnet run --project DungeonSlime`), which
+        // sits above the project directory rather than at or below it, so an
+        // upward-only search from there never finds the .csproj.
         string projectFile = Assembly.GetEntryAssembly().GetName().Name + ".csproj";
-        string current = Directory.GetCurrentDirectory();
+        string current = AppContext.BaseDirectory;
         string projectDirectory = null;
 
         while (current != null && projectDirectory == null)

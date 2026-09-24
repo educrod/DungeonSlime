@@ -57,7 +57,14 @@
       <_WineEnv>PATH=$(HOME)/.winemonogame-wrappers:$(PATH);MGFXC_WINE_PATH=$(HOME)/.winemonogame</_WineEnv>
     </PropertyGroup>
     <MSBuild Condition="'$(SkipContentBuild)' != 'true'" Projects="$(_ContentBuilderProject)" Targets="Build" Properties="Configuration=Release" RemoveProperties="RuntimeIdentifier;RuntimeIdentifiers;SelfContained;PublishReadyToRun;PublishSingleFile;PublishTrimmed" />
-    <Exec Condition="'$(SkipContentBuild)' != 'true'" EnvironmentVariables="$(_WineEnv)" Command="dotnet run --project &quot;$(_ContentBuilderProject)&quot; -c Release --no-build -- build -p $(MonoGamePlatform) --workingDir &quot;$(MSBuildThisFileDirectory)..\Content&quot; -s Assets -o &quot;$(_ContentOutputDir.TrimEnd('\'))&quot; -i &quot;$(_ContentIntermediateDir.TrimEnd('\'))&quot;" />
+    <!-- WorkingDirectory is required here: Exec otherwise inherits the cwd of
+         whatever process invoked this build (e.g. the repo root when running
+         a "dotnet run" pointed at DungeonSlime via -project), not this
+         project's own directory. The relative workingDir argument passed
+         below resolves against that inherited cwd, so building from outside
+         this folder makes it point at the wrong place, silently building
+         zero content instead of failing loudly. -->
+    <Exec Condition="'$(SkipContentBuild)' != 'true'" EnvironmentVariables="$(_WineEnv)" WorkingDirectory="$(MSBuildThisFileDirectory)" Command="dotnet run --project &quot;$(_ContentBuilderProject)&quot; -c Release --no-build -- build -p $(MonoGamePlatform) --workingDir &quot;$(MSBuildThisFileDirectory)..\Content&quot; -s Assets -o &quot;$(_ContentOutputDir.TrimEnd('\'))&quot; -i &quot;$(_ContentIntermediateDir.TrimEnd('\'))&quot;" />
     <ItemGroup>
       <_BuiltContent Include="$(_ContentOutputDir)\**\*.*" />
       <Content Include="@(_BuiltContent)">
