@@ -565,9 +565,16 @@ public class GameScene : Scene
         casters.AddRange(_slime.ShadowCasters);
         casters.Add(_bat.ShadowCaster);  
         
-        // start rendering the lights  
-        _deferredRenderer.DrawLights(_lights, casters);
-        // TODO: draw lights  
+        // start rendering the lights
+        _deferredRenderer.DrawLights(_lights, casters, (blend, stencil) =>
+        {
+           Core.SpriteBatch.Begin(
+              effect: _gameMaterial.Effect,
+              depthStencilState: stencil,
+              blendState: blend);
+           _slime.Draw(_ => {});
+           Core.SpriteBatch.End();
+        });
 
         _deferredRenderer.Finish();
         _deferredRenderer.DrawComposite();
