@@ -84,6 +84,7 @@ static const float bayer4x4[16] = {
 
 float ShadowFadeStartDistance;
 float ShadowFadeEndDistance;
+float ShadowIntensity;
 
 float4 MainPS(VertexShaderOutput input) : COLOR {
     // get an ordered dither value
@@ -96,6 +97,7 @@ float4 MainPS(VertexShaderOutput input) : COLOR {
     float endDistance = ShadowFadeEndDistance;
     float startDistance = ShadowFadeStartDistance;
     float fade = saturate((input.TextureCoordinates.x - endDistance) / (startDistance - endDistance));
+    fade = min(fade, ShadowIntensity);
 
     if (ditherValue > fade) {
         clip(-1);

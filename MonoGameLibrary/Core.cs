@@ -266,6 +266,7 @@ public class Core : Game
         DeferredCompositeMaterial.Update();
         ShadowHullMaterial.SetParameter("ShadowFadeStartDistance", .013f);  
         ShadowHullMaterial.SetParameter("ShadowFadeEndDistance", .13f);
+        ShadowHullMaterial.SetParameter("ShadowIntensity", .85f);
         ShadowHullMaterial.Update();
         
         base.Update(gameTime);
