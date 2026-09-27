@@ -220,7 +220,7 @@ public class Core : Game
         DeferredCompositeMaterial.IsDebugVisible = false;
 
         ShadowHullMaterial = SharedContent.WatchMaterial("effects/shadowHullEffect");
-        ShadowHullMaterial.IsDebugVisible = true;
+        ShadowHullMaterial.IsDebugVisible = false;
     }
 
     protected override void UnloadContent()
