@@ -10,6 +10,7 @@ using ImGuiNET;
 using ImGuiNET.SampleProgram.XNA;
 using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Content;
+using MonoGameLibrary.Debug;
 using System.Collections.Generic;
 
 
@@ -220,7 +221,9 @@ public class Core : Game
         DeferredCompositeMaterial.IsDebugVisible = false;
 
         ShadowHullMaterial = SharedContent.WatchMaterial("effects/shadowHullEffect");
-        ShadowHullMaterial.IsDebugVisible = false;
+        // TEST ONLY on this branch: proves a Material debug window and the new StatsPanel
+        // coexist in the single shared ImGui frame. Set back to false before porting.
+        ShadowHullMaterial.IsDebugVisible = true;
     }
 
     protected override void UnloadContent()
@@ -274,6 +277,8 @@ public class Core : Game
 
     protected override void Draw(GameTime gameTime)
     {
+        GraphicsDevice.Clear(Color.Black);
+
         // If there is an active scene, draw it.
         if (s_activeScene != null)
         {
@@ -285,7 +290,7 @@ public class Core : Game
         SpriteBatch.Draw(SceneTransitionTextures[SceneTransition.TextureIndex % SceneTransitionTextures.Count], GraphicsDevice.Viewport.Bounds, Color.White);  
         SpriteBatch.End();
         
-        Material.DrawVisibleDebugUi(gameTime);
+        DebugOverlay.Draw(gameTime);
 
         base.Draw(gameTime);
     }
