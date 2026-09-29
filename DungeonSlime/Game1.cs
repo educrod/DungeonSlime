@@ -2,6 +2,7 @@
 using Gum.Forms;
 using Gum.Forms.Controls;
 using MonoGameLibrary;
+using MonoGameLibrary.Debug;
 using MonoGameGum;
 using Microsoft.Xna.Framework.Media;
 
@@ -20,6 +21,11 @@ public class Game1 : Core
     protected override void Initialize()
     {
         base.Initialize();
+
+        new StatsPanel();
+
+        // Flip this to false to hide the debug overlay.
+        DebugOverlay.Visible = true;
 
         // Start playing the background music.
         Audio.PlaySong(_themeSong);
